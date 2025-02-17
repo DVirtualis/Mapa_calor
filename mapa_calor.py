@@ -199,46 +199,50 @@ def get_connection():
 def fetch_data():
     cnxn = get_connection()
     query = """
-        DECLARE @DataInicial DATE = '2024-01-01', 
-            @DataFinal DATE = '2024-12-31';
+   
+DECLARE @DataInicial DATE = '2024-01-01', 
+        @DataFinal DATE = '2024-12-31';
 
-    CREATE TABLE #TmpHeatMap (
-        CodFabr VARCHAR(4),
-        Ano INT,
-        Mes INT,
-        ValorComprado DECIMAL(18, 2),
-        ValorVendido DECIMAL(18, 2)
-    );
+CREATE TABLE #TmpHeatMap (
+    CodFabr VARCHAR(4),
+    Ano INT,
+    Mes INT,
+    ValorComprado DECIMAL(18, 2),
+    ValorVendido DECIMAL(18, 2)
+);
 
-    INSERT INTO #TmpHeatMap (CodFabr, Ano, Mes, ValorComprado, ValorVendido)
-        SELECT 
-            F.CodFabr,
-            YEAR(m.DtMov),
-            MONTH(m.DtMov),
-            SUM(im.Qtd * dbo.fn_ValorItemMov2(im.IdItemMov, im.PrecoUnit, im.PercDescontoItem, m.PercDesconto, 'L')),
-            0
-        FROM Movimento m
-            INNER JOIN ItensMov im ON m.IdMov = im.IdMov
-            INNER JOIN Produtos p ON im.IdProduto = p.IdProduto
-            INNER JOIN Fabricantes f ON p.CodFabr = f.IdEmpresa
-        WHERE m.TipoMov IN ('1.1', '1.6')
-            AND m.DtMov BETWEEN @DataInicial AND @DataFinal
-        GROUP BY f.CodFabr, YEAR(m.DtMov), MONTH(m.DtMov);
+INSERT INTO #TmpHeatMap (CodFabr, Ano, Mes, ValorComprado, ValorVendido)
+SELECT 
+    F.CodFabr,
+    YEAR(m.DtMov),
+    MONTH(m.DtMov),
+    SUM(im.Qtd * dbo.fn_ValorItemMov2(im.IdItemMov, im.PrecoUnit, im.PercDescontoItem, m.PercDesconto, 'L')),
+    0
+FROM Movimento m
+INNER JOIN ItensMov im ON m.IdMov = im.IdMov
+INNER JOIN Produtos p ON im.IdProduto = p.IdProduto
+INNER JOIN Fabricantes f ON p.CodFabr = f.IdEmpresa
+WHERE m.TipoMov IN ('1.1', '1.6')
+AND m.DtMov BETWEEN @DataInicial AND @DataFinal
+GROUP BY f.CodFabr, YEAR(m.DtMov), MONTH(m.DtMov);
 
-    INSERT INTO #TmpHeatMap (CodFabr, Ano, Mes, ValorComprado, ValorVendido)
-        SELECT 
-            bi.CodFabr,
-            bi.anovenda,
-            bi.mesvenda,
-            0,
-            SUM(ISNULL(bi.vrvenda, 0))
-        FROM dbo.BI_CUBOVENDA bi
-        WHERE bi.codclifor LIKE 'C%'
-            AND bi.codclifor NOT LIKE 'F%'
-            AND bi.CondPag NOT IN ('MATERIAL PROMOCIONAL', 'AJUSTE INVENTARIO ENT', 'SAIDA COMODATO', 'TROCA MERCANTIL', 'GARANTIA', 'DEVOLUÇÃO VENDA', 'TRANSF. FILIAL', 'DEMONSTRACAO', 'TROCA DE ELETRÔNICOS', 'TROCA', 'DEVOLUÇÃO DE COMODATO', 'DEVOLUÇÃO MERCANTIL', 'DEVOLUÇÃO DE CONCERTO', 'COMODATO VENDA', 'COBR DE INVENTÁRIO SKY', 'COBR DE SLOW MOVING SKY', 'DEVOLUÇÃO DE COMPRA', 'REMESSA P/ CONSERTO', 'ENTRADA COMODATO', 'BAIXA DE INCENDIO', 'BAIXA ESTOQUE/ PERCA', 'DESCONTO EM FOLHA', 'CREDITO DEV.VENDA', 'COMODATO EAF', 'COMODATO EAF SKY', 'COMODATO EAF VIVENSIS', 'COMODATO TELEVENDAS', 'USO INTERNO', 'DESCONTO EM FOLHA', 'FINANCEIRO - GERENCIAL', 'ATIVOS IMOBILIZADO')
-            AND bi.tipomovimento IN ('NF Venda', 'Pré-Venda')
-            AND DATEFROMPARTS(bi.anovenda, bi.mesvenda, 1) BETWEEN @DataInicial AND @DataFinal
-        GROUP BY bi.CodFabr, bi.anovenda, bi.mesvenda;
+INSERT INTO #TmpHeatMap (CodFabr, Ano, Mes, ValorComprado, ValorVendido)
+SELECT 
+    bi.CodFabr,
+    bi.anovenda,
+    bi.mesvenda,
+    0,
+    SUM(ISNULL(bi.vrvenda, 0))
+FROM dbo.BI_CUBOVENDA bi
+WHERE bi.codclifor LIKE 'C%'
+AND bi.codclifor NOT LIKE 'F%'
+AND bi.CondPag NOT IN ('MATERIAL PROMOCIONAL', 'AJUSTE INVENTARIO ENT', 'SAIDA COMODATO', 'TROCA MERCANTIL', 'GARANTIA', 'DEVOLUÇÃO VENDA', 'TRANSF. FILIAL', 'DEMONSTRACAO', 'TROCA DE ELETRÔNICOS', 'TROCA', 'DEVOLUÇÃO DE COMODATO', 'DEVOLUÇÃO MERCANTIL', 'DEVOLUÇÃO DE CONCERTO', 'COMODATO VENDA', 'COBR DE INVENTÁRIO SKY', 'COBR DE SLOW MOVING SKY', 'DEVOLUÇÃO DE COMPRA', 'REMESSA P/ CONSERTO', 'ENTRADA COMODATO', 'BAIXA DE INCENDIO', 'BAIXA ESTOQUE/ PERCA', 'DESCONTO EM FOLHA', 'CREDITO DEV.VENDA', 'COMODATO EAF', 'COMODATO EAF SKY', 'COMODATO EAF VIVENSIS', 'COMODATO TELEVENDAS', 'USO INTERNO', 'DESCONTO EM FOLHA', 'FINANCEIRO - GERENCIAL', 'ATIVOS IMOBILIZADO')
+AND bi.tipomovimento IN ('NF Venda', 'Pré-Venda')
+AND DATEFROMPARTS(bi.anovenda, bi.mesvenda, 1) BETWEEN @DataInicial AND @DataFinal
+GROUP BY bi.CodFabr, bi.anovenda, bi.mesvenda;
+
+SELECT * FROM #TmpHeatMap;
+
     """
     df = pd.read_sql(query, cnxn)
     cnxn.close()
