@@ -9,3 +9,4 @@ pyodbc
 streamlit
 toml
 streamlit-option-menu
+seaborn
