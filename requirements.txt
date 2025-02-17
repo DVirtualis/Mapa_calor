@@ -1,0 +1,11 @@
+﻿datetime
+mysql-connector
+numpy
+pandas
+plotly
+plotly.express
+plotly-resampler
+pyodbc
+streamlit
+toml
+streamlit-option-menu
