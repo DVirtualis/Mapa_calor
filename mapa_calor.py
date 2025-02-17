@@ -199,48 +199,58 @@ def get_connection():
 def fetch_data():
     cnxn = get_connection()
     query = """
-    DECLARE @DataInicial DATE = '2024-01-01', 
-            @DataFinal DATE = '2024-12-31';
+ DECLARE @DataInicial DATE = '2024-01-01', 
+        @DataFinal DATE = '2024-12-31';
 
-    CREATE TABLE #TmpHeatMap (
-        CodFabr VARCHAR(4),
-        Ano INT,
-        Mes INT,
-        ValorComprado DECIMAL(18, 2),
-        ValorVendido DECIMAL(18, 2)
-    );
-
-    INSERT INTO #TmpHeatMap (CodFabr, Ano, Mes, ValorComprado, ValorVendido)
+WITH HeatMap AS (
     SELECT 
         F.CodFabr,
-        YEAR(m.DtMov),
-        MONTH(m.DtMov),
-        SUM(im.Qtd * dbo.fn_ValorItemMov2(im.IdItemMov, im.PrecoUnit, im.PercDescontoItem, m.PercDesconto, 'L')),
-        0
+        F.NomeFabr,
+        YEAR(m.DtMov) AS Ano,
+        MONTH(m.DtMov) AS Mes,
+        SUM(im.Qtd * dbo.fn_ValorItemMov2(im.IdItemMov, im.PrecoUnit, im.PercDescontoItem, m.PercDesconto, 'L')) AS ValorComprado,
+        0 AS ValorVendido
     FROM Movimento m
     INNER JOIN ItensMov im ON m.IdMov = im.IdMov
     INNER JOIN Produtos p ON im.IdProduto = p.IdProduto
     INNER JOIN Fabricantes f ON p.CodFabr = f.IdEmpresa
     WHERE m.TipoMov IN ('1.1', '1.6')
-    AND m.DtMov BETWEEN @DataInicial AND @DataFinal
-    GROUP BY f.CodFabr, YEAR(m.DtMov), MONTH(m.DtMov);
+        AND m.DtMov BETWEEN @DataInicial AND @DataFinal
+    GROUP BY f.CodFabr, f.NomeFabr, YEAR(m.DtMov), MONTH(m.DtMov)
 
-    INSERT INTO #TmpHeatMap (CodFabr, Ano, Mes, ValorComprado, ValorVendido)
+    UNION ALL
+
     SELECT 
         bi.CodFabr,
-        bi.anovenda,
-        bi.mesvenda,
-        0,
-        SUM(ISNULL(bi.vrvenda, 0))
+        f.NomeFabr,
+        bi.anovenda AS Ano,
+        bi.mesvenda AS Mes,
+        0 AS ValorComprado,
+        SUM(ISNULL(bi.vrvenda, 0)) AS ValorVendido
     FROM dbo.BI_CUBOVENDA bi
+    INNER JOIN Fabricantes f ON bi.CodFabr = f.CodFabr
     WHERE bi.codclifor LIKE 'C%'
-    AND bi.codclifor NOT LIKE 'F%'
-    AND bi.CondPag NOT IN ('MATERIAL PROMOCIONAL', 'AJUSTE INVENTARIO ENT', 'SAIDA COMODATO', 'TROCA MERCANTIL', 'GARANTIA', 'DEVOLUÇÃO VENDA', 'TRANSF. FILIAL', 'DEMONSTRACAO', 'TROCA DE ELETRÔNICOS', 'TROCA', 'DEVOLUÇÃO DE COMODATO', 'DEVOLUÇÃO MERCANTIL', 'DEVOLUÇÃO DE CONCERTO', 'COMODATO VENDA', 'COBR DE INVENTÁRIO SKY', 'COBR DE SLOW MOVING SKY', 'DEVOLUÇÃO DE COMPRA', 'REMESSA P/ CONSERTO', 'ENTRADA COMODATO', 'BAIXA DE INCENDIO', 'BAIXA ESTOQUE/ PERCA', 'DESCONTO EM FOLHA', 'CREDITO DEV.VENDA', 'COMODATO EAF', 'COMODATO EAF SKY', 'COMODATO EAF VIVENSIS', 'COMODATO TELEVENDAS', 'USO INTERNO', 'DESCONTO EM FOLHA', 'FINANCEIRO - GERENCIAL', 'ATIVOS IMOBILIZADO')
-    AND bi.tipomovimento IN ('NF Venda', 'Pré-Venda')
-    AND DATEFROMPARTS(bi.anovenda, bi.mesvenda, 1) BETWEEN @DataInicial AND @DataFinal
-    GROUP BY bi.CodFabr, bi.anovenda, bi.mesvenda;
+        AND bi.codclifor NOT LIKE 'F%'
+        AND bi.CondPag NOT IN ('MATERIAL PROMOCIONAL', 'AJUSTE INVENTARIO ENT, 30', 'SAIDA COMODATO', 'TROCA MERCANTIL', 'GARANTIA', 'DEVOLUÇÃO VENDA', 'TRANSF. FILIAL', 'DEMONSTRACAO', 'TROCA DE ELETRÔNICOS', 'TROCA', 'DEVOLUÇÃO DE COMODATO', 'DEVOLUÇÃO MERCANTIL', 'DEVOLUÇÃO DE CONCERTO', 'COMODATO VENDA', 'COBR DE INVENTÁRIO SKY', 'COBR DE SLOW MOVING SKY', 'DEVOLUÇÃO DE COMPRA', 'REMESSA P/ CONSERTO', 'ENTRADA COMODATO', 'BAIXA DE INCENDIO', 'BAIXA ESTOQUE/ PERCA', 'DESCONTO EM FOLHA', 'CREDITO DEV.VENDA', 'COMODATO EAF', 'COMODATO EAF SKY', 'COMODATO EAF VIVENSIS', 'COMODATO TELEVENDAS', 'USO INTERNO', 'DESCONTO EM FOLHA', 'FINANCEIRO - GERENCIAL', 'ATIVOS IMOBILIZADO')
+        AND bi.codclifor NOT IN ('C00001','C02687','C02694','C00914','C01909','C02142','C02175','C02398','C02448','C40004','C50132','C50133','C50281','C50525','C50631','C50663','C50664','C50684','C50711','C50725','C50726','C50728','C50808','C50823','C51074','C51144','C51229','C51237','C51238','C51312','C51387','C51411','C51427','C51539','C51544','C51585','C51616','C51638','C51639','C51673','C51704','C51706','C51731','C51751','C51826','C51875','C51936','C51937','C51957','C51969','C51988','C51994','C52001','C52030','C52042','C52046','C52052','C52106','C52119','C52121','C52144','C52153','C52155','C52180','C52274','C52371','C52372','C52399','C52426','C52464','C52466','C52543','C52649','C52710','C52713','C52720','C52836','C52926','C52988','C53007','C53008','C53036','C53074','C53075','C53076','C53138','C53255','C53277','C53302','C53461','C53781')
+        AND bi.tipomovimento IN ('NF Venda', 'Pré-Venda')
+        AND DATEFROMPARTS(bi.anovenda, bi.mesvenda, 1) BETWEEN @DataInicial AND @DataFinal
+    GROUP BY bi.CodFabr, f.NomeFabr, bi.anovenda, bi.mesvenda
+)
 
-    SELECT * FROM #TmpHeatMap;
+SELECT 
+    CodFabr AS COD_FABR,
+    NomeFabr AS NOME_FABR,
+    Ano AS ANO,
+    Mes AS MES,
+    SUM(ValorComprado) AS VALOR_COMPRADO,
+    SUM(ValorVendido) AS VALOR_VENDIDO,
+    SUM(ValorComprado) - SUM(ValorVendido) AS DIFERENCA_VALORES
+FROM HeatMap
+GROUP BY CodFabr, NomeFabr, Ano, Mes;
+
+
+
     """
     
     try:
