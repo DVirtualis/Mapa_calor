@@ -409,7 +409,7 @@ else:
         with tab2:
             plot_heatmap(df, 'VALOR_VENDIDO', 'Vendas')
         with tab3:
-            plot_heatmap(df, 'DIFERENCA_VALORES', 'Diferença Compra-Venda')
+            plot_heatmap(df, 'DIFERENCA_VALORES', 'Diferença de Valores')
         
         
         
