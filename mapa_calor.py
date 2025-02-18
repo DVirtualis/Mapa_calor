@@ -247,9 +247,10 @@ else:
     try:
         # Converter nomes de colunas se necessário
         df = df.rename(columns={
-            'ValorComprado': 'VALOR_COMPRADO',
-            'ValorVendido': 'VALOR_VENDIDO',
-            'DiferencaValores': 'DIFERENCA_VALORES',
+            'ValorComprado': 'VALOR COMPRADO',
+            'ValorVendido': 'VALOR VENDIDO',
+            'DiferencaValores': 'DIFERENCA VALORES',
+            
           
         })
         
@@ -288,7 +289,7 @@ else:
                 'VALOR_COMPRADO': 'sum',
                 'VALOR_VENDIDO': 'sum',
                 'DIFERENCA_VALORES': 'sum'
-            }).nlargest(10, 'VALOR_COMPRADO')
+            }).nlargest(10, 'VALOR_VENDIDO')
             
             st.dataframe(
                 top10.style.format({
