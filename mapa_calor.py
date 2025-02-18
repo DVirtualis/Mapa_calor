@@ -208,7 +208,7 @@ def plot_heatmap(data, column, title):
             return
             
         pivot_table = data.pivot_table(
-            index='NOME_FABR', 
+            index='NOMEFABR', 
             columns='Mês', 
             values=column, 
             aggfunc='sum', 
@@ -255,7 +255,7 @@ else:
             'Mês': 'MES'
         })
         
-        fabricantes = ['Todos'] + sorted(df['NOME_FABR'].unique().tolist())
+        fabricantes = ['Todos'] + sorted(df['NOMEFABR'].unique().tolist())
         escolha_fabricante = st.selectbox(
             "Escolha o Fabricante", 
             fabricantes,
@@ -263,7 +263,7 @@ else:
         )
         
         if escolha_fabricante != 'Todos':
-            df = df[df['NOME_FABR'] == escolha_fabricante]
+            df = df[df['NOMEFABR'] == escolha_fabricante]
         
         # Métricas rápidas
         col1, col2, col3 = st.columns(3)
@@ -286,7 +286,7 @@ else:
         # Análise Top 10
         if escolha_fabricante == 'Todos':
             st.subheader("Top 10 Fabricantes")
-            top10 = df.groupby('NOME_FABR').agg({
+            top10 = df.groupby('NOMEFABR').agg({
                 'VALOR_COMPRADO': 'sum',
                 'VALOR_VENDIDO': 'sum',
                 'DIFERENCA_VALORES': 'sum'
