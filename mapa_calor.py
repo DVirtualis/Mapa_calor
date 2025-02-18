@@ -236,7 +236,7 @@ SELECT
     COALESCE(c.Mes, v.Mes) AS MES,
     ISNULL(c.ValorComprado, 0) AS VALOR_COMPRADO,
     ISNULL(v.ValorVendido, 0) AS VALOR_VENDIDO,
-     - ISNULL(v.ValorVendido, 0) - ISNULL(c.ValorComprado, 0) AS DIFERENCA_VALORES
+    ISNULL(v.ValorVendido, 0) - ISNULL(c.ValorComprado, 0) AS DIFERENCA_VALORES
 FROM ComprasCTE c
 FULL OUTER JOIN Vendas v
     ON c.CodFabr = v.CodFabr 
