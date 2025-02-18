@@ -320,8 +320,24 @@ def plot_heatmap(data, column, title):
 def plot_bar_chart(data):
     st.subheader("Gráfico de Colunas")
     try:
+        # Agrupa os dados por fabricante
         df_grouped = data.groupby('NOMEFABR')[['VALOR_COMPRADO', 'VALOR_VENDIDO']].sum().reset_index()
-        st.bar_chart(df_grouped.set_index('NOMEFABR'))
+        # Converte para formato longo para facilitar o agrupamento das barras
+        df_long = pd.melt(df_grouped, id_vars=['NOMEFABR'], 
+                          value_vars=['VALOR_COMPRADO', 'VALOR_VENDIDO'],
+                          var_name='Tipo', value_name='Valor')
+        # Cria o gráfico de barras agrupado com as cores personalizadas
+        fig = px.bar(
+            df_long, 
+            x='NOMEFABR', 
+            y='Valor', 
+            color='Tipo', 
+            barmode='group',
+            color_discrete_map={'VALOR_COMPRADO': '#084a91', 'VALOR_VENDIDO': '#fa6547'},
+            title='Gráfico de Colunas'
+        )
+        fig.update_layout(xaxis_title="Fabricante", yaxis_title="Valor (R$)")
+        st.plotly_chart(fig, use_container_width=True)
     except Exception as e:
         st.error(f"Erro ao plotar gráfico de barras: {e}")
 
