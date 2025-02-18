@@ -47,7 +47,7 @@ def init_theme():
             "light": {
                 "theme.base": "light",
                 "theme.backgroundColor": "#FFFFFF",
-                "theme.primaryColor": "#0095fb",
+                "theme.primaryColor": "#6bc4ff",
                 "theme.secondaryBackgroundColor": "#F3F4F6",
                 "theme.textColor": "#111827",
                 "button_face": "Modo Escuro 🌙",
