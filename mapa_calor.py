@@ -2,12 +2,8 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import pyodbc
-import toml
-from datetime import datetime, timedelta
-import seaborn as sns
-import matplotlib.pyplot as plt
+from datetime import datetime
 import numpy as np
-from matplotlib.colors import LogNorm
 
 # Configuração da página
 st.set_page_config(
@@ -18,147 +14,42 @@ st.set_page_config(
 )
 
 # ==========================================
-# 1. Temas e Estilização
+# 1. Temas e Estilização (Otimizado)
 # ==========================================
 def init_theme():
-    COLORS = ['#13428d', '#7C3AED', '#3B82F6', '#10B981', '#EF4444', '#F59E0B']
-    COLORS_DARK = ['#1b4f72', '#d35400', '#145a32', '#7b241c', '#5b2c6f']
-
-    ms = st.session_state
-    if "themes" not in ms:
-        ms.themes = {
+    if "themes" not in st.session_state:
+        st.session_state.themes = {
             "current_theme": "light",
             "light": {
                 "theme.base": "light",
-                "theme.backgroundColor": "#FFFFFF",
-                "theme.primaryColor": "#0095fb",
-                "theme.secondaryBackgroundColor": "#F3F4F6",
-                "theme.textColor": "#111827",
-                "button_face": "Modo Escuro 🌙",
-                "colors": COLORS,
+                "button_face": "🌙 Modo Escuro",
+                "colors": px.colors.qualitative.Plotly
             },
             "dark": {
                 "theme.base": "dark",
-                "theme.backgroundColor": "#1F2937",
-                "theme.primaryColor": "#0095fb",
-                "theme.secondaryBackgroundColor": "#4B5563",
-                "theme.textColor": "#efefef",
-                "button_face": "Modo Claro 🌞",
-                "colors": COLORS_DARK,
+                "button_face": "🌞 Modo Claro",
+                "colors": px.colors.qualitative.Dark24
             }
         }
 
-def change_theme():
-    ms = st.session_state
-    current_theme = ms.themes["current_theme"]
-    ms.themes["current_theme"] = "dark" if current_theme == "light" else "light"
-    ms.themes["refreshed"] = True
+def apply_theme():
+    theme = st.session_state.themes[st.session_state.themes["current_theme"]]
+    config = {
+        "layout": {"plot_bgcolor": "rgba(0,0,0,0)"},
+        "font": {"color": "#2c3e50" if theme["theme.base"] == "light" else "#f5f6fa"}
+    }
+    px.defaults.template = "plotly_white" if theme["theme.base"] == "light" else "plotly_dark"
+    px.defaults.color_continuous_scale = theme["colors"]
+    return config
 
-def apply_custom_css():
-    ms = st.session_state
-    current_theme = ms.themes["current_theme"]
-    theme_config = ms.themes[current_theme]
-    st.markdown(
-        f"""
-        <style>
-        html, body, .stApp {{
-            background-color: {theme_config["theme.backgroundColor"]};
-            color: {theme_config["theme.textColor"]};
-        }}
-        .stSelectbox > div > div {{
-            background-color: {theme_config["theme.secondaryBackgroundColor"]} !important;
-            color: {theme_config["theme.textColor"]} !important;
-            border-radius: 5px;
-            border: 2px solid {theme_config["theme.primaryColor"]} !important;
-        }}
-        .stSelectbox > div > div:hover {{
-            background-color: {theme_config["theme.primaryColor"]} !important;
-            color: #FFFFFF !important;
-            border: 2px solid {theme_config["theme.textColor"]} !important;
-            border-radius: 5px;
-            transition: border-color 0.3s ease-in-out;
-        }}
-        .stSelectbox > div > div::placeholder {{
-            color: {theme_config["theme.textColor"]} !important;
-            opacity: 0.7;
-        }}
-        h1, h2, h3, h4, h5, h6,
-        .stMarkdown h1, .stMarkdown h2, .stMarkdown h3,
-        .stMarkdown h4, .stMarkdown h5, .stMarkdown h6 {{
-            color: {theme_config["theme.textColor"]} !important;
-        }}
-        .stDataFrame, .stMetric, .stJson, .stAlert,
-        .stExpander .stMarkdown, .stTooltip, .stMetricValue {{
-            color: {theme_config["theme.textColor"]} !important;
-        }}
-        .stSidebar {{
-            background-color: {theme_config["theme.secondaryBackgroundColor"]} !important;
-            border-radius: 15px;
-            padding: 10px;
-        }}
-        .nav-link.active {{
-            background-color: {theme_config["theme.primaryColor"]} !important;
-            color: #FFFFFF !important;
-            font-weight: bold !important;
-            border-radius: 8px;
-            padding: 10px;
-            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-        }}
-        .nav-link.active .icon {{
-            color: #FFFFFF !important;
-        }}
-        .nav-link {{
-            color: {theme_config["theme.textColor"]} !important;
-            transition: background-color 0.3s, color 0.3s;
-        }}
-        .nav-link:hover {{
-            background-color: {theme_config["theme.primaryColor"]}33;
-            color: {theme_config["theme.primaryColor"]} !important;
-        }}
-        .stButton>button {{
-            background-color: {theme_config["theme.primaryColor"]} !important;
-            color: #FFFFFF !important;
-        }}
-        .st-emotion-cache-1cj4yv0,
-        .st-emotion-cache-efbu8t {{
-            background-color: {theme_config["theme.secondaryBackgroundColor"]} !important;
-        }}
-        .stMultiSelect span[data-baseweb="tag"] {{
-            background-color: {theme_config["theme.primaryColor"]} !important;
-            color: white !important;
-        }}
-        .stButton>button p {{
-            color: white !important;
-        }}
-        div[data-testid="stMetricValue"] {{
-            color: {theme_config["theme.textColor"]} !important;
-        }}
-        [class*="stMetric"] {{
-            color: {theme_config["theme.textColor"]} !important;
-        }}
-        [class*="st-emotion-cache"] {{
-            color: {theme_config["theme.primaryColor"]} !important;
-        }}
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
-
-# Inicializa tema e aplica CSS
 init_theme()
-apply_custom_css()
-
-if st.button(st.session_state.themes[st.session_state.themes["current_theme"]]["button_face"], on_click=change_theme):
-    pass
 
 # ==========================================
-# 2. Conexão com Banco de Dados e Consulta
+# 2. Conexão com Banco de Dados (Com cache)
 # ==========================================
-def get_db_credentials():
-    return st.secrets["database"]
-
+@st.cache_data(ttl=3600)
 def get_connection():
-    creds = get_db_credentials()
+    creds = st.secrets["database"]
     return pyodbc.connect(
         f"DRIVER={{ODBC Driver 17 for SQL Server}};"
         f"SERVER={creds['server']};"
@@ -167,91 +58,139 @@ def get_connection():
         f"PWD={creds['password']}"
     )
 
-def fetch_data():
-    cnxn = get_connection()
-    query = """
-EXEC sp_HeatMapComprasVendas '2024-01-01', '2024-12-31'
-    """
+@st.cache_data(ttl=300)
+def fetch_data(start_date, end_date):
     try:
-        cursor = cnxn.cursor()
-        cursor.execute(query)
-        # Avança para o conjunto de resultados que possua dados
-        while cursor.description is None:
-            if not cursor.nextset():
-                break
-        if cursor.description is None:
-            st.warning("A consulta não retornou dados.")
-            return pd.DataFrame()
-        rows = cursor.fetchall()
-        columns = [desc[0] for desc in cursor.description]
-        
-        # Se cada linha for um tuple com 1 elemento (possivelmente contendo os 6 valores esperados), desempacota:
-        if rows and len(rows[0]) == 1 and isinstance(rows[0][0], (list, tuple)):
-            rows = [row[0] for row in rows]
-        
-        df = pd.DataFrame(rows, columns=columns)
-        cnxn.close()
-        return df
+        with get_connection() as cnxn:
+            df = pd.read_sql(
+                f"EXEC sp_HeatMapComprasVendas '{start_date}', '{end_date}'", 
+                cnxn
+            )
+            
+            # Converter meses para formato categórico ordenado
+            meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 
+                    'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+            df['MES'] = pd.Categorical(df['MES'], categories=meses, ordered=True)
+            
+            return df
     except Exception as e:
-        st.error(f"Erro ao buscar dados: {e}")
+        st.error(f"Erro na conexão com o banco: {e}")
         return pd.DataFrame()
 
 # ==========================================
-# 3. Funções de Plotagem
+# 3. Funções de Visualização (Plotly)
 # ==========================================
 def plot_heatmap(data, column, title):
     try:
-        pivot_table = data.pivot_table(index='NOME_FABR', columns='MES', values=column, aggfunc='sum', fill_value=0)
-        plt.figure(figsize=(14, 10))
-        sns.heatmap(
-            pivot_table,
-            annot=True,
-            fmt=".0f",
-            cmap="coolwarm" if "Diferença" in title else "Blues",
-            linewidths=0.5,
-            cbar_kws={'label': 'Valor em R$'},
-            norm=LogNorm() if column != 'DIFERENCA_VALORES' else None
+        pivot = data.pivot_table(
+            index='NOME_FABR',
+            columns='MES',
+            values=column,
+            aggfunc='sum',
+            fill_value=0
         )
-        plt.title(f'Heatmap de {title}', fontsize=14)
-        plt.xlabel('Mês')
-        plt.ylabel('Fabricante')
-        st.pyplot(plt)
-        plt.close()
+        
+        # Ordenar por soma total
+        pivot = pivot.loc[pivot.sum(axis=1).sort_values(ascending=False).index]
+        
+        fig = px.imshow(
+            pivot,
+            labels=dict(x="Mês", y="Fabricante", color=title.split()[-1]),
+            title=title,
+            color_continuous_scale='Blues' if 'Compra' in title else 'Reds' if 'Venda' in title else 'RdBu_r',
+            text_auto=".2s"  # Formatação automática
+        )
+        
+        fig.update_layout(
+            xaxis=dict(side="top", tickangle=-45),
+            height=800,
+            coloraxis_colorbar=dict(title="R$")
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+        
     except Exception as e:
-        st.error(f"Erro ao plotar heatmap de {title}: {e}")
+        st.error(f"Erro ao gerar heatmap: {str(e)}")
 
-def plot_bar_chart(data):
-    st.subheader("Gráfico de Colunas")
-    try:
-        df_grouped = data.groupby('NOME_FABR')[['VALOR_COMPRADO', 'VALOR_VENDIDO']].sum().reset_index()
-        st.bar_chart(df_grouped.set_index('NOME_FABR'))
-    except Exception as e:
-        st.error(f"Erro ao plotar gráfico de barras: {e}")
+def plot_metricas(data):
+    cols = st.columns(3)
+    metricas = {
+        "Total Comprado": data['VALOR_COMPRADO'].sum(),
+        "Total Vendido": data['VALOR_VENDIDO'].sum(),
+        "Balanço": data['DIFERENCA_VALORES'].sum()
+    }
+    
+    for (k, v), col in zip(metricas.items(), cols):
+        col.metric(
+            label=k,
+            value=f"R$ {v:,.2f}",
+            delta=f"R$ {data['DIFERENCA_VALORES'].sum():,.2f}" if k == "Balanço" else None
+        )
 
 # ==========================================
 # 4. Aplicação Principal
 # ==========================================
-st.title("Análise de Compras e Vendas por Fabricante")
-df = fetch_data()
+def main():
+    # Controles de Data
+    col1, col2 = st.columns(2)
+    with col1:
+        start_date = st.date_input("Data Inicial", datetime(2024, 1, 1))
+    with col2:
+        end_date = st.date_input("Data Final", datetime(2024, 12, 31))
+    
+    # Carregar dados
+    df = fetch_data(start_date, end_date)
+    
+    if df.empty:
+        st.warning("Nenhum dado encontrado para o período selecionado")
+        return
+    
+    # Sidebar - Controles
+    with st.sidebar:
+        st.title("Filtros")
+        fabricante = st.selectbox(
+            "Selecione o Fabricante",
+            options=['Todos'] + sorted(df['NOME_FABR'].unique().tolist())
+        )
+        
+        if st.button(st.session_state.themes[st.session_state.themes["current_theme"]]["button_face"]):
+            change_theme()
+    
+    # Aplicar tema
+    theme_config = apply_theme()
+    
+    # Filtrar dados
+    if fabricante != 'Todos':
+        df = df[df['NOME_FABR'] == fabricante]
+    
+    # Visualizações
+    st.title("Análise de Compras e Vendas")
+    plot_metricas(df)
+    
+    tab1, tab2, tab3 = st.tabs(["Compras", "Vendas", "Balanço"])
+    
+    with tab1:
+        plot_heatmap(df, 'VALOR_COMPRADO', 'Heatmap de Compras')
+    
+    with tab2:
+        plot_heatmap(df, 'VALOR_VENDIDO', 'Heatmap de Vendas')
+    
+    with tab3:
+        plot_heatmap(df, 'DIFERENCA_VALORES', 'Balanço Compra vs Venda')
+    
+    # Análise Top 10
+    if fabricante == 'Todos':
+        st.header("Top 10 Fabricantes")
+        top10 = df.groupby('NOME_FABR')[['VALOR_COMPRADO', 'VALOR_VENDIDO']].sum()
+        top10['Balanço'] = top10['VALOR_VENDIDO'] - top10['VALOR_COMPRADO']
+        st.dataframe(
+            top10.nlargest(10, 'VALOR_COMPRADO').style.format("{:,.2f}"),
+            use_container_width=True
+        )
 
-if df.empty:
-    st.info("Nenhum dado foi retornado da consulta.")
-else:
-    try:
-        fabricantes = df['NOME_FABR'].unique()
-        escolha_fabricante = st.selectbox("Escolha o Fabricante", fabricantes)
-        df_filtrado = df[df['NOME_FABR'] == escolha_fabricante]
-    
-        plot_heatmap(df_filtrado, 'VALOR_COMPRADO', 'Compras')
-        plot_heatmap(df_filtrado, 'VALOR_VENDIDO', 'Vendas')
-        plot_heatmap(df_filtrado, 'DIFERENCA_VALORES', 'Diferença Compra-Venda')
-        plot_bar_chart(df_filtrado)
-    
-        # Heatmap dos Top 10 Fabricantes
-        mostrar_top10 = st.checkbox("Exibir Heatmap dos Top 10 Fabricantes Mais Comprados")
-        if mostrar_top10:
-            top10_fabricantes = df.groupby('NOME_FABR')['VALOR_COMPRADO'].sum().nlargest(10).index
-            df_top10 = df[df['NOME_FABR'].isin(top10_fabricantes)]
-            plot_heatmap(df_top10, 'VALOR_COMPRADO', 'Top 10 Fabricantes Mais Comprados')
-    except KeyError as e:
-        st.error(f"Erro ao acessar coluna no DataFrame: {e}")
+def change_theme():
+    current = st.session_state.themes["current_theme"]
+    st.session_state.themes["current_theme"] = "dark" if current == "light" else "light"
+
+if __name__ == "__main__":
+    main()
