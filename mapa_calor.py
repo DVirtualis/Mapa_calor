@@ -317,29 +317,24 @@ def plot_heatmap(data, column, title):
         st.error(f"Erro ao plotar heatmap: {str(e)}")
         
         
-def plot_bar_chart(data):
-    st.subheader("Gráfico de Colunas")
+def plot_bar_chart_st(data):
+    st.subheader("Gráfico de Colunas com st.bar_chart (Customizado)")
     try:
-        # Agrupa os dados por fabricante
+        # Agrega os dados por fabricante
         df_grouped = data.groupby('NOMEFABR')[['VALOR_COMPRADO', 'VALOR_VENDIDO']].sum().reset_index()
-        # Converte para formato longo para facilitar o agrupamento das barras
-        df_long = pd.melt(df_grouped, id_vars=['NOMEFABR'], 
-                          value_vars=['VALOR_COMPRADO', 'VALOR_VENDIDO'],
-                          var_name='Tipo', value_name='Valor')
-        # Cria o gráfico de barras agrupado com as cores personalizadas
-        fig = px.bar(
-            df_long, 
-            x='NOMEFABR', 
-            y='Valor', 
-            color='Tipo', 
-            barmode='group',
-            color_discrete_map={'VALOR_COMPRADO': '#084a91', 'VALOR_VENDIDO': '#fa6547'},
-            title='Gráfico de Colunas'
+        # Usa st.bar_chart passando o DataFrame em formato wide,
+        # com o eixo x definido pela coluna 'NOMEFABR' e as séries especificadas em y.
+        # O parâmetro 'color' recebe uma lista de cores na mesma ordem que as colunas de y.
+        st.bar_chart(
+            data=df_grouped,
+            x="NOMEFABR",
+            y=["VALOR_COMPRADO", "VALOR_VENDIDO"],
+            color=["#084a91", "#fa6547"],
+            horizontal=False
         )
-        fig.update_layout(xaxis_title="Fabricante", yaxis_title="Valor (R$)")
-        st.plotly_chart(fig, use_container_width=True)
     except Exception as e:
-        st.error(f"Erro ao plotar gráfico de barras: {e}")
+        st.error(f"Erro ao plotar gráfico de barras com st.bar_chart: {e}")
+
 
 # ==========================================
 # 4. Aplicação Principal (ATUALIZADO)
@@ -385,7 +380,7 @@ else:
             plot_heatmap(df, 'DIFERENCA_VALORES', 'Diferença Compra-Venda')
         
         # Gráfico de barras
-        plot_bar_chart(df)
+        plot_bar_chart_st(df)
         
         # Top 10 Fabricantes (apenas se 'Todos' estiver selecionado)
         if escolha_fabricante == 'Todos':
