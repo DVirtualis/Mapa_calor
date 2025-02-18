@@ -192,6 +192,7 @@ WITH ComprasCTE AS (
     INNER JOIN Produtos p ON im.IdProduto = p.IdProduto
     INNER JOIN Fabricantes f ON p.CodFabr = f.CodFabr
     WHERE m.TipoMov IN ('1.1', '1.6')
+    AND f.CodFabr not in ('0178')
       AND m.DtMov BETWEEN @DataInicial AND @DataFinal
     GROUP BY f.CodFabr, f.NOMEFABR, YEAR(m.DtMov), MONTH(m.DtMov)
 ),
@@ -223,7 +224,7 @@ Vendas AS (
           'C52144','C52153','C52155','C52180','C52274','C52371','C52372','C52399','C52426','C52464','C52466','C52543',
           'C52649','C52710','C52713','C52720','C52836','C52926','C52988','C53007','C53008','C53036','C53074','C53075',
           'C53076','C53138','C53255','C53277','C53302','C53461','C53781'
-      )
+      ) AND bi.GrupoN1 NOT IN ('MARKETING','USO E CONSUMO')
       AND bi.tipomovimento IN ('NF Venda', 'Pré-Venda')
       AND DATEFROMPARTS(bi.anovenda, bi.mesvenda, 1) BETWEEN @DataInicial AND @DataFinal
     GROUP BY bi.CodFabr, bi.nomefabr, bi.anovenda, bi.mesvenda
