@@ -288,8 +288,8 @@ def plot_heatmap(data, column, title):
         # - aggfunc='sum': soma os valores para cada combinação fabricante/mês
         # - fill_value=0: preenche com 0 onde não há dados
         pivot_table = data.pivot_table(
-            index='NOMEFABR', 
-            columns='Mês', 
+            index='Mês', 
+            columns='NOMEFABR', 
             values=column, 
             aggfunc='sum', 
             fill_value=0
