@@ -395,42 +395,43 @@ else:
                 df = df[df['Mês'].isin(meses_selecionados)]
         
         # Exibe métricas com formatação brasileira e cores customizadas
-           # Exibe métricas com formatação brasileira e cores customizadas para as fontes
-        col1, col2, col3 = st.columns(3)
-        total_comprado = df['VALOR_COMPRADO'].sum()
-        total_vendido = df['VALOR_VENDIDO'].sum()
-        diferenca = df['DIFERENCA_VALORES'].sum()
 
-        # Define as cores para as fontes:
-        font_comprado = "#FFA500"   # Amarelo alaranjado
-        font_vendido = "#00CED1"    # Azul esverdeado
-        if diferenca > 0:
-            font_diferenca = "#084a91"  # Azul
-        elif diferenca < 0:
-            font_diferenca = "#ff0000"  # Vermelho
-        else:
-            font_diferenca = "#4d004d"  # Lilás
+            col1, col2, col3 = st.columns(3)
+            total_comprado = df['VALOR_COMPRADO'].sum()
+            total_vendido = df['VALOR_VENDIDO'].sum()
+            diferenca = df['DIFERENCA_VALORES'].sum()
 
-        col1.markdown(f"""
-        <div style="padding: 10px; border-radius: 5px; text-align: center;">
-            <span style="font-size: 16px; font-weight: bold; color: {font_comprado};">Total Comprado</span>
-            <h2 style="margin: 0; color: {font_comprado};">{format_currency(total_comprado)}</h2>
-        </div>
-        """, unsafe_allow_html=True)
+            # Define as cores para as fontes:
+            font_comprado = "#FFA500"   # Amarelo alaranjado
+            font_vendido = "#00CED1"    # Azul esverdeado
+            if diferenca > 0:
+                font_diferenca = "#084a91"  # Azul
+            elif diferenca < 0:
+                font_diferenca = "#ff0000"  # Vermelho
+            else:
+                font_diferenca = "#D8BFD8"  # Lilás
 
-        col2.markdown(f"""
-        <div style="padding: 10px; border-radius: 5px; text-align: center;">
-            <span style="font-size: 16px; font-weight: bold; color: {font_vendido};">Total Vendido</span>
-            <h2 style="margin: 0; color: {font_vendido};">{format_currency(total_vendido)}</h2>
-        </div>
-        """, unsafe_allow_html=True)
+            col1.markdown(f"""
+            <div style="padding: 10px; border-radius: 5px; text-align: center;">
+                <span style="font-size: 16px; font-weight: bold; color: {font_comprado} !important;">Total Comprado</span>
+                <h2 style="margin: 0; color: {font_comprado} !important;">{format_currency(total_comprado)}</h2>
+            </div>
+            """, unsafe_allow_html=True)
 
-        col3.markdown(f"""
-        <div style="padding: 10px; border-radius: 5px; text-align: center;">
-            <span style="font-size: 16px; font-weight: bold; color: {font_diferenca};">Diferença</span>
-            <h2 style="margin: 0; color: {font_diferenca};">{format_currency(diferenca)}</h2>
-        </div>
-        """, unsafe_allow_html=True)
+            col2.markdown(f"""
+            <div style="padding: 10px; border-radius: 5px; text-align: center;">
+                <span style="font-size: 16px; font-weight: bold; color: {font_vendido} !important;">Total Vendido</span>
+                <h2 style="margin: 0; color: {font_vendido} !important;">{format_currency(total_vendido)}</h2>
+            </div>
+            """, unsafe_allow_html=True)
+
+            col3.markdown(f"""
+            <div style="padding: 10px; border-radius: 5px; text-align: center;">
+                <span style="font-size: 16px; font-weight: bold; color: {font_diferenca} !important;">Diferença</span>
+                <h2 style="margin: 0; color: {font_diferenca} !important;">{format_currency(diferenca)}</h2>
+            </div>
+            """, unsafe_allow_html=True)
+
 
         
         
