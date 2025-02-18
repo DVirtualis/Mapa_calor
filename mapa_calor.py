@@ -10,6 +10,18 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.colors import LogNorm
 
+# Função para obter conexão com o banco de dados
+def get_connection():
+    config = toml.load("config.toml")
+    connection_string = (
+        f"DRIVER={config['database']['driver']};"
+        f"SERVER={config['database']['server']};"
+        f"DATABASE={config['database']['database']};"
+        f"UID={config['database']['username']};"
+        f"PWD={config['database']['password']}"
+    )
+    return pyodbc.connect(connection_string)
+
 # Configuração da página
 st.set_page_config(
     page_title="Análise Compra e Venda",
@@ -150,126 +162,140 @@ apply_custom_css()
 
 if st.button(st.session_state.themes[st.session_state.themes["current_theme"]]["button_face"], on_click=change_theme):
     pass
-
 # ==========================================
-# 2. Conexão com Banco de Dados e Consulta
+# 2. Conexão com Banco de Dados e Consulta (MODIFICADO)
 # ==========================================
-def get_db_credentials():
-    return st.secrets["database"]
 
-@st.cache_resource
-def get_connection():
-    creds = get_db_credentials()
-    return pyodbc.connect(
-        f"DRIVER={{ODBC Driver 17 for SQL Server}};"
-        f"SERVER={creds['server']};"
-        f"DATABASE={creds['database']};"
-        f"UID={creds['username']};"
-        f"PWD={creds['password']}"
-    )
-
+@st.cache_data(ttl=3600)
 def fetch_data():
-    cnxn = get_connection()
-    query = """
-EXEC sp_HeatMapComprasVendas '2024-01-01', '2024-12-31'
-    """
     try:
-        cursor = cnxn.cursor()
-        cursor.execute(query)
-        # Avança para o conjunto de resultados com dados
-        while cursor.description is None:
-            if not cursor.nextset():
-                break
-        if cursor.description is None:
-            st.warning("A consulta não retornou dados.")
-            return pd.DataFrame()
-        rows = cursor.fetchall()
-        columns = [desc[0] for desc in cursor.description]
-        
-        # Se cada linha contém apenas um elemento, verifique se é uma string JSON
-        if rows and len(rows[0]) == 1:
-            sample = rows[0][0]
-            if isinstance(sample, str):
-                try:
-                    # Converte cada linha (string JSON) em um dicionário
-                    parsed_rows = [json.loads(r[0]) for r in rows]
-                    df = pd.DataFrame(parsed_rows)
-                except Exception as e:
-                    st.error(f"Erro ao converter JSON: {e}")
-                    return pd.DataFrame()
-            elif hasattr(sample, '__iter__') and not isinstance(sample, (str, bytes)) and len(sample) == len(columns):
-                # Caso seja um tuple/list com o número esperado de colunas
-                rows = [tuple(r[0]) for r in rows]
-                df = pd.DataFrame(rows, columns=columns)
-            else:
-                # Se não atender a nenhum dos casos, tenta criar o DataFrame diretamente
-                df = pd.DataFrame(rows, columns=columns)
-        else:
-            df = pd.DataFrame(rows, columns=columns)
+        with get_connection() as cnxn:
+            # Usar pandas para ler diretamente do SQL
+            df = pd.read_sql(
+                "EXEC sp_HeatMapComprasVendas '2024-01-01', '2024-12-31'", 
+                cnxn
+            )
             
-        cnxn.close()
-        return df
+            # Converter colunas se necessário
+            if 'Mês' in df.columns:
+                df['Mês'] = pd.Categorical(
+                    df['Mês'],
+                    categories=['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
+                               'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
+                    ordered=True
+                )
+            
+            return df
+            
     except Exception as e:
         st.error(f"Erro ao buscar dados: {e}")
         return pd.DataFrame()
 
 # ==========================================
-# 3. Funções de Plotagem
+# 3. Funções de Plotagem (ATUALIZADO)
 # ==========================================
-# O SP retorna: NOME_FABR, Ano, Mês, ValorComprado, ValorVendido, DiferencaValores
+
 def plot_heatmap(data, column, title):
     try:
-        pivot_table = data.pivot_table(index='NOME_FABR', columns='Mês', values=column, aggfunc='sum', fill_value=0)
-        plt.figure(figsize=(14, 10))
-        sns.heatmap(
-            pivot_table,
-            annot=True,
-            fmt=".0f",
-            cmap="coolwarm" if "Diferença" in title else "Blues",
-            linewidths=0.5,
-            cbar_kws={'label': 'Valor em R$'},
-            norm=LogNorm() if column != 'DiferencaValores' else None
+        # Verificar se os dados estão no formato correto
+        if column not in data.columns:
+            st.error(f"Coluna '{column}' não encontrada nos dados")
+            return
+            
+        pivot_table = data.pivot_table(
+            index='NOME_FABR', 
+            columns='Mês', 
+            values=column, 
+            aggfunc='sum', 
+            fill_value=0
         )
-        plt.title(f'Heatmap de {title}', fontsize=14)
-        plt.xlabel('Mês')
-        plt.ylabel('Fabricante')
-        st.pyplot(plt)
-        plt.close()
+        
+        fig = px.imshow(
+            pivot_table,
+            labels=dict(x="Mês", y="Fabricante", color="Valor (R$)"),
+            title=f'Heatmap de {title}',
+            color_continuous_scale='Blues' if 'Compra' in title else 'Reds',
+            text_auto=".2s"
+        )
+        
+        fig.update_layout(
+            xaxis=dict(side="top", tickangle=-45),
+            height=600
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+        
     except Exception as e:
-        st.error(f"Erro ao plotar heatmap de {title}: {e}")
-
-def plot_bar_chart(data):
-    st.subheader("Gráfico de Colunas")
-    try:
-        df_grouped = data.groupby('NOME_FABR')[['ValorComprado', 'ValorVendido']].sum().reset_index()
-        st.bar_chart(df_grouped.set_index('NOME_FABR'))
-    except Exception as e:
-        st.error(f"Erro ao plotar gráfico de barras: {e}")
+        st.error(f"Erro ao plotar heatmap: {str(e)}")
 
 # ==========================================
-# 4. Aplicação Principal
+# 4. Aplicação Principal (ATUALIZADO)
 # ==========================================
+
 st.title("Análise de Compras e Vendas por Fabricante")
 df = fetch_data()
 
 if df.empty:
-    st.info("Nenhum dado foi retornado da consulta para o período selecionado.")
+    st.info("Nenhum dado foi retornado da consulta.")
 else:
+    # Verificar estrutura dos dados
+    st.write("Pré-visualização dos dados:", df.head())
+    
     try:
-        fabricantes = df['NOME_FABR'].unique()
-        escolha_fabricante = st.selectbox("Escolha o Fabricante", fabricantes)
-        df_filtrado = df[df['NOME_FABR'] == escolha_fabricante]
-    
-        plot_heatmap(df_filtrado, 'ValorComprado', 'Compras')
-        plot_heatmap(df_filtrado, 'ValorVendido', 'Vendas')
-        plot_heatmap(df_filtrado, 'DiferencaValores', 'Diferença Compra-Venda')
-        plot_bar_chart(df_filtrado)
-    
-        # Heatmap dos Top 10 Fabricantes (baseado em ValorComprado)
-        mostrar_top10 = st.checkbox("Exibir Heatmap dos Top 10 Fabricantes Mais Comprados")
-        if mostrar_top10:
-            top10_fabricantes = df.groupby('NOME_FABR')['ValorComprado'].sum().nlargest(10).index
-            df_top10 = df[df['NOME_FABR'].isin(top10_fabricantes)]
-            plot_heatmap(df_top10, 'ValorComprado', 'Top 10 Fabricantes Mais Comprados')
+        # Converter nomes de colunas se necessário
+        df = df.rename(columns={
+            'ValorComprado': 'VALOR_COMPRADO',
+            'ValorVendido': 'VALOR_VENDIDO',
+            'DiferencaValores': 'DIFERENCA_VALORES',
+            'Mês': 'MES'
+        })
+        
+        fabricantes = ['Todos'] + sorted(df['NOME_FABR'].unique().tolist())
+        escolha_fabricante = st.selectbox(
+            "Escolha o Fabricante", 
+            fabricantes,
+            index=0
+        )
+        
+        if escolha_fabricante != 'Todos':
+            df = df[df['NOME_FABR'] == escolha_fabricante]
+        
+        # Métricas rápidas
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Total Comprado", f"R$ {df['VALOR_COMPRADO'].sum():,.2f}")
+        col2.metric("Total Vendido", f"R$ {df['VALOR_VENDIDO'].sum():,.2f}")
+        col3.metric("Diferença", f"R$ {df['DIFERENCA_VALORES'].sum():,.2f}")
+        
+        # Abas para visualizações
+        tab1, tab2, tab3 = st.tabs(["Compras", "Vendas", "Diferença"])
+        
+        with tab1:
+            plot_heatmap(df, 'VALOR_COMPRADO', 'Compras')
+            
+        with tab2:
+            plot_heatmap(df, 'VALOR_VENDIDO', 'Vendas')
+            
+        with tab3:
+            plot_heatmap(df, 'DIFERENCA_VALORES', 'Diferença Compra-Venda')
+            
+        # Análise Top 10
+        if escolha_fabricante == 'Todos':
+            st.subheader("Top 10 Fabricantes")
+            top10 = df.groupby('NOME_FABR').agg({
+                'VALOR_COMPRADO': 'sum',
+                'VALOR_VENDIDO': 'sum',
+                'DIFERENCA_VALORES': 'sum'
+            }).nlargest(10, 'VALOR_COMPRADO')
+            
+            st.dataframe(
+                top10.style.format({
+                    'VALOR_COMPRADO': 'R$ {:.2f}',
+                    'VALOR_VENDIDO': 'R$ {:.2f}',
+                    'DIFERENCA_VALORES': 'R$ {:.2f}'
+                }),
+                use_container_width=True
+            )
+            
     except KeyError as e:
-        st.error(f"Erro ao acessar coluna no DataFrame: {e}")
+        st.error(f"Erro de estrutura de dados: {str(e)}")
+        st.write("Colunas disponíveis:", df.columns.tolist())
