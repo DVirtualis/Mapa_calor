@@ -243,14 +243,30 @@ FULL OUTER JOIN Vendas v
     AND c.Ano = v.Ano 
     AND c.Mes = v.Mes
 ORDER BY NOMEFABR, ANO, MES;""", cnxn)
-            # Se a coluna dos meses vem sem acento, renomeia para 'Mês'
-            if 'Mes' in df.columns and 'Mês' not in df.columns:
-                df = df.rename(columns={'Mes': 'Mês'})
+            # Converter nome da coluna e valores dos meses
+            if 'MES' in df.columns:
+                # Renomear coluna
+                df = df.rename(columns={'MES': 'Mês'})
+                
+                # Mapear números para abreviações dos meses
+                meses_map = {
+                    1: 'Jan', 2: 'Fev', 3: 'Mar', 4: 'Abr', 5: 'Mai', 6: 'Jun',
+                    7: 'Jul', 8: 'Ago', 9: 'Set', 10: 'Out', 11: 'Nov', 12: 'Dez'
+                }
+                df['Mês'] = df['Mês'].map(meses_map)
+                
+                # Converter para categoria ordenada
+                df['Mês'] = pd.Categorical(
+                    df['Mês'],
+                    categories=['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
+                                'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
+                    ordered=True
+                )
+            
             return df
     except Exception as e:
         st.error(f"Erro ao buscar dados: {e}")
         return pd.DataFrame()
-
 # ==========================================
 # Função auxiliar para formatação de moeda no padrão brasileiro
 # ==========================================
@@ -258,31 +274,30 @@ def format_currency(value):
     formatted = f"R$ {value:,.2f}"
     formatted = formatted.replace(",", "TEMP").replace(".", ",").replace("TEMP", ".")
     return formatted
-
 # ==========================================
 # 3. Funções de Plotagem (ATUALIZADO)
 # ==========================================
 def plot_heatmap(data, column, title):
     try:
-        if column not in data.columns:
-            st.error(f"Coluna '{column}' não encontrada nos dados")
+        # Verificar se as colunas necessárias existem
+        if 'Mês' not in data.columns or column not in data.columns:
+            st.error("Coluna 'Mês' ou métrica não encontrada")
             return
-        # Cria uma cópia para formatação do mês, sem alterar o DataFrame original
-        plot_data = data.copy()
-        if 'Mês' in plot_data.columns:
-            plot_data['Mês'] = pd.Categorical(
-                plot_data['Mês'],
-                categories=['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
-                            'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
-                ordered=True
-            )
-        pivot_table = plot_data.pivot_table(
+            
+        pivot_table = data.pivot_table(
             index='NOMEFABR', 
             columns='Mês', 
             values=column, 
             aggfunc='sum', 
             fill_value=0
         )
+        
+        # Ordenar meses corretamente
+        pivot_table = pivot_table.reindex(columns=[
+            'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
+            'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'
+        ], fill_value=0)
+        
         fig = px.imshow(
             pivot_table,
             labels=dict(x="Mês", y="Fabricante", color="Valor (R$)"),
@@ -290,14 +305,18 @@ def plot_heatmap(data, column, title):
             color_continuous_scale='Blues' if 'Compra' in title else 'Reds',
             text_auto=".2s"
         )
+        
         fig.update_layout(
             xaxis=dict(side="top", tickangle=-45),
             height=600
         )
+        
         st.plotly_chart(fig, use_container_width=True)
+        
     except Exception as e:
         st.error(f"Erro ao plotar heatmap: {str(e)}")
-
+        
+        
 def plot_bar_chart(data):
     st.subheader("Gráfico de Colunas")
     try:
