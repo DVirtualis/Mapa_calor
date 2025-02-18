@@ -404,14 +404,14 @@ else:
             bg_comprado = "#FFA500"   # Amarelo alaranjado
             bg_vendido = "#036a6c"    # Azul esverdeado
             if diferenca > 0:
-                bg_diferenca = "#3076c2"  # Azul
+                bg_diferenca = "#043c79"  # Azul
                 font_diferenca = "#cd7f26" # Azul
             elif diferenca < 0:
                 bg_diferenca = "#ff0000"  # Vermelho
-                font_diferenca = "#0d09e8" # Branco
+                font_diferenca = "#0d09e8" 
             else:
                 bg_diferenca = "#4d004d"  # Lilás
-                font_diferenca = "#0eddf0" # Branco
+                font_diferenca = "#0eddf0" 
 
             col1.markdown(f"""
             <div style="padding: 10px; background-color: {bg_comprado}; border-radius: 5px; text-align: center;">
