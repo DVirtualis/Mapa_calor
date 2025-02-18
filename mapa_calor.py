@@ -306,7 +306,7 @@ def plot_heatmap(data, column, title):
         pivot_table,
         labels=dict(x="Fabricante", y="Mês", color="Valor (R$)"),
         title=f'Heatmap de {title}',
-        color_continuous_scale='Bluyl' if 'Compra' in title else ('Algae' if 'Venda' in title else 'RdBu'),
+        color_continuous_scale='Bluyl' if 'Compra' in title else ('Algae' if 'Venda' in title else 'Bluered'),
         text_auto=".2s"
     )
 
