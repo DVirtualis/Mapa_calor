@@ -325,7 +325,7 @@ def plot_bar_chart(data):
             y='Valor', 
             color='Tipo', 
             barmode='group',
-            color_discrete_map={'VALOR_COMPRADO': '#084a91', 'VALOR_VENDIDO': '#fa6547'},
+            color_discrete_map={'VALOR_COMPRADO': '#084a91', 'VALOR_VENDIDO': '#00ba6c'},
             text='ValorFormatado'
         )
         fig.update_layout(
