@@ -155,9 +155,7 @@ def apply_custom_css():
         [class*="stMetric"] {{
             color: {theme_config["theme.textColor"]} !important;
         }}
-        [class*="st-emotion-cache"] {{
-            color: {theme_config["theme.primaryColor"]} !important;
-        }}
+      
         </style>
         """,
         unsafe_allow_html=True
