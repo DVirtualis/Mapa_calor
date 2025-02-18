@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.express as px
 import pyodbc
 import toml
-import json  # necessário para converter JSON em dict
+import json  # necessário para converter JSON em dict, se for o caso
 from datetime import datetime, timedelta
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -25,7 +25,6 @@ def get_connection():
         f"UID={creds['username']};"
         f"PWD={creds['password']}"
     )
-
 
 # Configuração da página
 st.set_page_config(
@@ -167,6 +166,7 @@ apply_custom_css()
 
 if st.button(st.session_state.themes[st.session_state.themes["current_theme"]]["button_face"], on_click=change_theme):
     pass
+
 # ==========================================
 # 2. Conexão com Banco de Dados e Consulta (MODIFICADO)
 # ==========================================
@@ -175,38 +175,45 @@ if st.button(st.session_state.themes[st.session_state.themes["current_theme"]]["
 def fetch_data():
     try:
         with get_connection() as cnxn:
-            # Usar pandas para ler diretamente do SQL
-            df = pd.read_sql(
-                "EXEC sp_HeatMapComprasVendas '2024-01-01', '2024-12-31'", 
-                cnxn
-            )
+            # Ler diretamente com pandas
+            df = pd.read_sql("EXEC sp_HeatMapComprasVendas '2024-01-01', '2024-12-31'", cnxn)
             
-            # Converter colunas se necessário
+            # Se a coluna dos meses vem sem acento, renomeia para 'Mês'
+            if 'Mes' in df.columns and 'Mês' not in df.columns:
+                df = df.rename(columns={'Mes': 'Mês'})
+            
+            # Converter a coluna 'Mês' em variável categórica com ordem adequada, se existir
             if 'Mês' in df.columns:
                 df['Mês'] = pd.Categorical(
                     df['Mês'],
                     categories=['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
-                               'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
+                                'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
                     ordered=True
                 )
             
             return df
-            
     except Exception as e:
         st.error(f"Erro ao buscar dados: {e}")
         return pd.DataFrame()
 
 # ==========================================
+# Função auxiliar para formatação de moeda no padrão brasileiro
+# ==========================================
+def format_currency(value):
+    # Formata com separador de milhar (vírgula) e ponto decimal, em seguida inverte os símbolos:
+    formatted = f"R$ {value:,.2f}"
+    # Troca vírgulas por temporário, pontos por vírgulas, e temporário por pontos:
+    formatted = formatted.replace(",", "TEMP").replace(".", ",").replace("TEMP", ".")
+    return formatted
+
+# ==========================================
 # 3. Funções de Plotagem (ATUALIZADO)
 # ==========================================
-
 def plot_heatmap(data, column, title):
     try:
-        # Verificar se os dados estão no formato correto
         if column not in data.columns:
             st.error(f"Coluna '{column}' não encontrada nos dados")
             return
-            
         pivot_table = data.pivot_table(
             index='NOMEFABR', 
             columns='Mês', 
@@ -214,7 +221,6 @@ def plot_heatmap(data, column, title):
             aggfunc='sum', 
             fill_value=0
         )
-        
         fig = px.imshow(
             pivot_table,
             labels=dict(x="Mês", y="Fabricante", color="Valor (R$)"),
@@ -222,80 +228,79 @@ def plot_heatmap(data, column, title):
             color_continuous_scale='Blues' if 'Compra' in title else 'Reds',
             text_auto=".2s"
         )
-        
         fig.update_layout(
             xaxis=dict(side="top", tickangle=-45),
             height=600
         )
-        
         st.plotly_chart(fig, use_container_width=True)
-        
     except Exception as e:
         st.error(f"Erro ao plotar heatmap: {str(e)}")
+
+def plot_bar_chart(data):
+    st.subheader("Gráfico de Colunas")
+    try:
+        df_grouped = data.groupby('NOMEFABR')[['VALOR_COMPRADO', 'VALOR_VENDIDO']].sum().reset_index()
+        # Formata os valores para exibição
+        df_grouped['VALOR_COMPRADO'] = df_grouped['VALOR_COMPRADO'].apply(format_currency)
+        df_grouped['VALOR_VENDIDO'] = df_grouped['VALOR_VENDIDO'].apply(format_currency)
+        st.bar_chart(df_grouped.set_index('NOMEFABR'))
+    except Exception as e:
+        st.error(f"Erro ao plotar gráfico de barras: {e}")
 
 # ==========================================
 # 4. Aplicação Principal (ATUALIZADO)
 # ==========================================
-
 st.title("Análise de Compras e Vendas por Fabricante")
 df = fetch_data()
 
 if df.empty:
     st.info("Nenhum dado foi retornado da consulta.")
 else:
-     
     try:
-        # Converter nomes de colunas se necessário
+        # Renomeia colunas para padronização
         df = df.rename(columns={
             'ValorComprado': 'VALOR_COMPRADO',
             'ValorVendido': 'VALOR_VENDIDO',
-            'DiferencaValores': 'DIFERENCA_VALORES',
-            
-          
+            'DiferencaValores': 'DIFERENCA_VALORES'
         })
         
+        # Lista de fabricantes com opção 'Todos'
         fabricantes = ['Todos'] + sorted(df['NOMEFABR'].unique().tolist())
-        escolha_fabricante = st.selectbox(
-            "Escolha o Fabricante", 
-            fabricantes,
-            index=0
-        )
+        escolha_fabricante = st.selectbox("Escolha o Fabricante", fabricantes, index=0)
         
         if escolha_fabricante != 'Todos':
             df = df[df['NOMEFABR'] == escolha_fabricante]
         
-        # Métricas rápidas
+        # Exibe métricas com formatação brasileira
         col1, col2, col3 = st.columns(3)
-        col1.metric("Total Comprado", f"R$ {df['VALOR_COMPRADO'].sum():,.2f}")
-        col2.metric("Total Vendido", f"R$ {df['VALOR_VENDIDO'].sum():,.2f}")
-        col3.metric("Diferença", f"R$ {df['DIFERENCA_VALORES'].sum():,.2f}")
+        col1.metric("Total Comprado", format_currency(df['VALOR_COMPRADO'].sum()))
+        col2.metric("Total Vendido", format_currency(df['VALOR_VENDIDO'].sum()))
+        col3.metric("Diferença", format_currency(df['DIFERENCA_VALORES'].sum()))
         
         # Abas para visualizações
         tab1, tab2, tab3 = st.tabs(["Compras", "Vendas", "Diferença"])
         
         with tab1:
             plot_heatmap(df, 'VALOR_COMPRADO', 'Compras')
-            
         with tab2:
             plot_heatmap(df, 'VALOR_VENDIDO', 'Vendas')
-            
         with tab3:
             plot_heatmap(df, 'DIFERENCA_VALORES', 'Diferença Compra-Venda')
-            
-        # Análise Top 10
+        
+        # Top 10 Fabricantes (apenas se todos estiverem selecionados)
         if escolha_fabricante == 'Todos':
             st.subheader("Top 10 Fabricantes")
             top10 = df.groupby('NOMEFABR').agg({
                 'VALOR_COMPRADO': 'sum',
                 'VALOR_VENDIDO': 'sum',
                 'DIFERENCA_VALORES': 'sum'
-            }).nlargest(10, 'VALOR_VENDIDO')
+            }).nlargest(10, 'VALOR_COMPRADO')
             
             st.dataframe(
                 top10.style.format({
-                    'VALOR_COMPRADO': 'R$ {:.2f}',
-                    'VALOR_VENDIDO': 'R$ {:.2f}',
-                    'DIFERENCA_VALORES': 'R$ {:.2f}'
+                    'VALOR_COMPRADO': lambda x: format_currency(x),
+                    'VALOR_VENDIDO': lambda x: format_currency(x),
+                    'DIFERENCA_VALORES': lambda x: format_currency(x)
                 }),
                 use_container_width=True
             )
