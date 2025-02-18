@@ -415,7 +415,7 @@ else:
                     'Valor Vendido': lambda x: format_currency(x),
                     'Diferença de Valores': lambda x: format_currency(x)
                 }),
-                use_container_width=True
+                use_container_width=True, hide_index=True
             )
 
             
