@@ -394,11 +394,57 @@ else:
             if meses_selecionados:
                 df = df[df['Mês'].isin(meses_selecionados)]
         
-        # Exibe métricas com formatação brasileira
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Total Comprado", format_currency(df['VALOR_COMPRADO'].sum()))
-        col2.metric("Total Vendido", format_currency(df['VALOR_VENDIDO'].sum()))
-        col3.metric("Diferença", format_currency(df['DIFERENCA_VALORES'].sum()))
+        # Exibe métricas com formatação brasileira e cores customizadas
+            col1, col2, col3 = st.columns(3)
+            total_comprado = df['VALOR_COMPRADO'].sum()
+            total_vendido = df['VALOR_VENDIDO'].sum()
+            diferenca = df['DIFERENCA_VALORES'].sum()
+
+            # Define as cores de fundo
+            bg_comprado = "#FFA500"   # Amarelo alaranjado
+            bg_vendido = "#00CED1"    # Azul esverdeado
+            if diferenca > 0:
+                bg_diferenca = "#084a91"  # Azul
+            elif diferenca < 0:
+                bg_diferenca = "#ff0000"  # Vermelho
+            else:
+                bg_diferenca = "#4d004d"  # Lilás
+
+            col1.markdown(f"""
+            <div style="padding: 10px; background-color: {bg_comprado}; border-radius: 5px; text-align: center;">
+                <span style="font-size: 16px; font-weight: bold;">Total Comprado</span>
+                <h2 style="margin: 0;">{format_currency(total_comprado)}</h2>
+            </div>
+            """, unsafe_allow_html=True)
+
+            col2.markdown(f"""
+            <div style="padding: 10px; background-color: {bg_vendido}; border-radius: 5px; text-align: center;">
+                <span style="font-size: 16px; font-weight: bold;">Total Vendido</span>
+                <h2 style="margin: 0;">{format_currency(total_vendido)}</h2>
+            </div>
+            """, unsafe_allow_html=True)
+
+            col3.markdown(f"""
+            <div style="padding: 10px; background-color: {bg_diferenca}; border-radius: 5px; text-align: center;">
+                <span style="font-size: 16px; font-weight: bold;">Diferença</span>
+                <h2 style="margin: 0;">{format_currency(diferenca)}</h2>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        
+        
+        # Abas para visualizações dos gráficos (usam o DataFrame com nomes originais)
+        tab1, tab2, tab3 = st.tabs(["Compras", "Vendas", "Diferença"])
+        with tab1:
+            plot_heatmap(df, 'VALOR_COMPRADO', 'Compras')
+        with tab2:
+            plot_heatmap(df, 'VALOR_VENDIDO', 'Vendas')
+        with tab3:
+            plot_heatmap(df, 'DIFERENCA_VALORES', 'Diferença de Valores')
+        
+        # Gráfico de barras
+        plot_bar_chart(df)
+        
         
         # Exibe os dados completos em um expander (com colunas renomeadas para exibição)
         with st.expander("Ver dados completos"):
@@ -416,19 +462,7 @@ else:
                 'Valor Vendido': lambda x: format_currency(x),
                 'Diferença de Valores': lambda x: format_currency(x)
             }), use_container_width=True, hide_index=True)
-        
-        # Abas para visualizações dos gráficos (usam o DataFrame com nomes originais)
-        tab1, tab2, tab3 = st.tabs(["Compras", "Vendas", "Diferença"])
-        with tab1:
-            plot_heatmap(df, 'VALOR_COMPRADO', 'Compras')
-        with tab2:
-            plot_heatmap(df, 'VALOR_VENDIDO', 'Vendas')
-        with tab3:
-            plot_heatmap(df, 'DIFERENCA_VALORES', 'Diferença de Valores')
-        
-        # Gráfico de barras
-        plot_bar_chart(df)
-        
+            
         # Exibe o Top 10 Fabricantes em um expander (renomeando as colunas)
         if escolha_fabricante == 'Todos':
             with st.expander("Top 10 Fabricantes"):
