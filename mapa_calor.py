@@ -297,19 +297,19 @@ def plot_heatmap(data, column, title):
         
         # Reordena as linhas (meses) para garantir a ordem correta
         pivot_table = pivot_table.reindex(
-            index=['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
-                   'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
+            index=['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
             fill_value=0
         )
         
         # Cria o heatmap usando px.imshow a partir da pivot_table
         fig = px.imshow(
-            pivot_table,
-            labels=dict(x="Fabricante", y="Mês", color="Valor (R$)"),
-            title=f'Heatmap de {title}',
-            color_continuous_scale='Blues' if 'Compra' in title else 'Greens',
-            text_auto=".2s"
-        )
+        pivot_table,
+        labels=dict(x="Fabricante", y="Mês", color="Valor (R$)"),
+        title=f'Heatmap de {title}',
+        color_continuous_scale='Blues' if 'Compra' in title else ('Greens' if 'Venda' in title else 'RdBu'),
+        text_auto=".2s"
+    )
+
         
         # Atualiza o layout: o eixo y (meses) é configurado para exibir os ticks corretamente
         fig.update_layout(
