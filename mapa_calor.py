@@ -469,12 +469,12 @@ else:
             plot_heatmap(df, 'DIFERENCA_VALORES', 'Diferença Compra-Venda')
         
         # Abas para visualizações dos gráficos (usam o DataFrame com nomes originais)
-        tab1, tab2, tab3 = st.tabs(["Compras", "Vendas", "Diferença"])
-        with tab1:
+        tab4, tab5, tab6 = st.tabs(["Compras", "Vendas", "Diferença"])
+        with tab4:
             plot_heatmap2(df, 'VALOR_COMPRADO', 'Compras')
-        with tab2:
+        with tab5:
             plot_heatmap2(df, 'VALOR_VENDIDO', 'Vendas')
-        with tab3:
+        with tab6:
             plot_heatmap2(df, 'DIFERENCA_VALORES', 'Diferença Compra-Venda')
         
         # Gráfico de barras
