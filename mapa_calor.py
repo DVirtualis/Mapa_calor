@@ -232,8 +232,8 @@ Vendas AS (
 SELECT 
     COALESCE(c.CodFabr, v.CodFabr) AS COD_FABR,
     COALESCE(c.NOMEFABR, v.nomefabr) AS NOMEFABR,
-    COALESCE(c.Ano, v.Ano) AS ANO,
     COALESCE(c.Mes, v.Mes) AS MES,
+    COALESCE(c.Ano, v.Ano) AS ANO,
     ISNULL(c.ValorComprado, 0) AS VALOR_COMPRADO,
     ISNULL(v.ValorVendido, 0) AS VALOR_VENDIDO,
     ISNULL(v.ValorVendido, 0) - ISNULL(c.ValorComprado, 0) AS DIFERENCA_VALORES
@@ -419,6 +419,7 @@ else:
         with st.expander("Ver dados completos"):
             df_table = df.copy()
             df_table = df_table.rename(columns={
+                'ANO': 'Ano',
                 'COD_FABR': 'Código Fabr.',              
                 'NOMEFABR': 'Fabricante',
                 'VALOR_COMPRADO': 'Valor Comprado',
