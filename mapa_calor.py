@@ -247,9 +247,9 @@ else:
     try:
         # Converter nomes de colunas se necessário
         df = df.rename(columns={
-            'ValorComprado': 'VALOR COMPRADO',
-            'ValorVendido': 'VALOR VENDIDO',
-            'DiferencaValores': 'DIFERENCA VALORES',
+            'ValorComprado': 'VALOR_COMPRADO',
+            'ValorVendido': 'VALOR_VENDIDO',
+            'DiferencaValores': 'DIFERENCA_VALORES',
             
           
         })
