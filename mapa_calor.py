@@ -175,15 +175,20 @@ EXEC sp_HeatMapComprasVendas '2024-01-01', '2024-12-31'
     try:
         cursor = cnxn.cursor()
         cursor.execute(query)
+        # Avança para o conjunto de resultados que possua dados
+        while cursor.description is None:
+            if not cursor.nextset():
+                break
         if cursor.description is None:
             st.warning("A consulta não retornou dados.")
             return pd.DataFrame()
         rows = cursor.fetchall()
-        # Se cada linha for um tuple com 1 elemento que é, por sua vez, uma tupla com os dados esperados, "desempacota"
-        if rows and isinstance(rows[0][0], tuple):
-            rows = [row[0] for row in rows]
-        # Cria o DataFrame usando os nomes das colunas conforme o cursor.description
         columns = [desc[0] for desc in cursor.description]
+        
+        # Se cada linha for um tuple com 1 elemento (possivelmente contendo os 6 valores esperados), desempacota:
+        if rows and len(rows[0]) == 1 and isinstance(rows[0][0], (list, tuple)):
+            rows = [row[0] for row in rows]
+        
         df = pd.DataFrame(rows, columns=columns)
         cnxn.close()
         return df
@@ -232,7 +237,6 @@ df = fetch_data()
 if df.empty:
     st.info("Nenhum dado foi retornado da consulta.")
 else:
-    # Seleciona o fabricante (caso as colunas estejam conforme o esperado)
     try:
         fabricantes = df['COD_FABR'].unique()
         escolha_fabricante = st.selectbox("Escolha o Fabricante", fabricantes)
