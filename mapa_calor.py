@@ -12,7 +12,7 @@ from matplotlib.colors import LogNorm
 
 # Função para obter conexão com o banco de dados
 def get_connection():
-    config = toml.load("config.toml")
+    config = toml.load("secrets.toml")
     connection_string = (
         f"DRIVER={config['database']['driver']};"
         f"SERVER={config['database']['server']};"
