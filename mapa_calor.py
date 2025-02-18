@@ -57,7 +57,7 @@ def init_theme():
                 "theme.base": "dark",
                 "theme.backgroundColor": "#1F2937",
                 "theme.primaryColor": "#0095fb",
-                "theme.secondaryBackgroundColor": "#4B5563",
+                "theme.secondaryBackgroundColor": "#d8dfe8",
                 "theme.textColor": "#efefef",
                 "button_face": "Modo Claro 🌞",
                 "colors": COLORS_DARK,
@@ -294,7 +294,7 @@ def plot_heatmap(data, column, title):
             pivot_table,
             labels=dict(x="Mês", y="Fabricante", color="Valor (R$)"),
             title=f'Heatmap de {title}',
-            color_continuous_scale='Blues' if 'Compra' in title else 'Reds',
+            color_continuous_scale='Blues' if 'Compra' in title else 'Greens',
             text_auto=".2s"
         )
         fig.update_layout(
