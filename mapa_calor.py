@@ -9,254 +9,245 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.colors import LogNorm
 
+# Configuração da página
 st.set_page_config(
     page_title="Análise Compra e Venda",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="expanded")
+    initial_sidebar_state="expanded"
+)
 
-def page_compra_venda():
-     # Paleta de cores atualizada
+# ==========================================
+# 1. Temas e Estilização
+# ==========================================
+def init_theme():
     COLORS = ['#13428d', '#7C3AED', '#3B82F6', '#10B981', '#EF4444', '#F59E0B']
     COLORS_DARK = ['#1b4f72', '#d35400', '#145a32', '#7b241c', '#5b2c6f']
 
-    # Configuração do tema no session_state
     ms = st.session_state
     if "themes" not in ms:
         ms.themes = {
             "current_theme": "light",
             "light": {
                 "theme.base": "light",
-                "theme.backgroundColor": "#FFFFFF",  # Cor de fundo
-                "theme.primaryColor": "#0095fb",     # Cor primária (botões, links)
-                "theme.secondaryBackgroundColor": "#F3F4F6",  # Cor de fundo secundária
-                "theme.textColor": "#111827",        # Cor do texto
-                "button_face": "Modo Escuro 🌙",     # Texto do botão
-                "colors": COLORS,                    # Paleta de cores
+                "theme.backgroundColor": "#FFFFFF",
+                "theme.primaryColor": "#0095fb",
+                "theme.secondaryBackgroundColor": "#F3F4F6",
+                "theme.textColor": "#111827",
+                "button_face": "Modo Escuro 🌙",
+                "colors": COLORS,
             },
             "dark": {
                 "theme.base": "dark",
-                "theme.backgroundColor": "#1F2937",  # Cor de fundo
-                "theme.primaryColor": "#0095fb",     # Cor primária (botões, links)
-                "theme.secondaryBackgroundColor": "#4B5563",  # Cor de fundo secundária
-                "theme.textColor": "#efefef",        # Cor do texto
-                "button_face": "Modo Claro 🌞",      # Texto do botão
-                "colors": COLORS_DARK,               # Paleta de cores
+                "theme.backgroundColor": "#1F2937",
+                "theme.primaryColor": "#0095fb",
+                "theme.secondaryBackgroundColor": "#4B5563",
+                "theme.textColor": "#efefef",
+                "button_face": "Modo Claro 🌞",
+                "colors": COLORS_DARK,
             }
         }
 
-    # Função para alternar o tema
-    def change_theme():
-        current_theme = ms.themes["current_theme"]
-        ms.themes["current_theme"] = "dark" if current_theme == "light" else "light"
-        ms.themes["refreshed"] = True  # Atualiza o estado
+def change_theme():
+    ms = st.session_state
+    current_theme = ms.themes["current_theme"]
+    ms.themes["current_theme"] = "dark" if current_theme == "light" else "light"
+    ms.themes["refreshed"] = True
 
-    # Configuração do tema atual
+def apply_custom_css():
+    ms = st.session_state
     current_theme = ms.themes["current_theme"]
     theme_config = ms.themes[current_theme]
-
-     # Botão de alternar tema
-    if st.button(theme_config["button_face"], on_click=change_theme):
-        pass
-
-
-    # Aplicar as cores do tema atual
-    colors = theme_config["colors"]
-
-    # Injetar CSS personalizado com base no tema atual
     st.markdown(
         f"""
         <style>
-        /* ===== [CONFIGURAÇÃO GLOBAL] ===== */
         html, body, .stApp {{
             background-color: {theme_config["theme.backgroundColor"]};
             color: {theme_config["theme.textColor"]};
         }}
-
-        /* ===== [COMPONENTES DO STREAMLIT] ===== */
-        /* Ajuste para Selectbox */
         .stSelectbox > div > div {{
             background-color: {theme_config["theme.secondaryBackgroundColor"]} !important;
             color: {theme_config["theme.textColor"]} !important;
-            border-radius: 5px; /* Bordas arredondadas */
-            border: 2px solid {theme_config["theme.primaryColor"]} !important; /* Cor oposta do tema */
+            border-radius: 5px;
+            border: 2px solid {theme_config["theme.primaryColor"]} !important;
         }}
-
         .stSelectbox > div > div:hover {{
             background-color: {theme_config["theme.primaryColor"]} !important;
             color: #FFFFFF !important;
-              border: 2px solid {theme_config["theme.textColor"]} !important; /* Cor oposta do tema */
-        border-radius: 5px; /* Bordas arredondadas */
-        transition: border-color 0.3s ease-in-out; /* Suaviza a transição */
-
+            border: 2px solid {theme_config["theme.textColor"]} !important;
+            border-radius: 5px;
+            transition: border-color 0.3s ease-in-out;
         }}
-
-        /* Placeholder ajustado */
         .stSelectbox > div > div::placeholder {{
             color: {theme_config["theme.textColor"]} !important;
             opacity: 0.7;
         }}
-
-        
-        /* ===== [CABEÇALHOS E TÍTULOS] ===== */
         h1, h2, h3, h4, h5, h6,
         .stMarkdown h1, .stMarkdown h2, .stMarkdown h3,
         .stMarkdown h4, .stMarkdown h5, .stMarkdown h6 {{
             color: {theme_config["theme.textColor"]} !important;
         }}
-
-    /* ===== [COMPONENTES PRINCIPAIS] ===== */
         .stDataFrame, .stMetric, .stJson, .stAlert,
         .stExpander .stMarkdown, .stTooltip, .stMetricValue {{
             color: {theme_config["theme.textColor"]} !important;
         }}
-        
-        
-        /* ===== [SIDEBAR] ===== */
         .stSidebar {{
             background-color: {theme_config["theme.secondaryBackgroundColor"]} !important;
             border-radius: 15px;
             padding: 10px;
         }}
-         .nav-link.active {{
-        background-color: {theme_config["theme.primaryColor"]} !important;
-        color: #FFFFFF !important; /* Texto branco para contraste */
-        font-weight: bold !important; /* Texto em negrito para destaque */
-        border-radius: 8px; /* Bordas arredondadas */
-        padding: 10px; /* Espaçamento interno */
-        box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); /* Sombra para destaque */
-    }}
-
-    /* Ícones dentro do item ativo */
-    .nav-link.active .icon {{
-        color: #FFFFFF !important; /* Altera a cor do ícone no item ativo */
-    }}
-
-    /* Estilo para itens inativos */
-    .nav-link {{
-        color: {theme_config["theme.textColor"]} !important; /* Cor do texto do tema */
-        transition: background-color 0.3s, color 0.3s; /* Transição suave ao passar o mouse */
-    }}
-
-    .nav-link:hover {{
-        background-color: {theme_config["theme.primaryColor"]}33; /* Cor primária translúcida */
-        color: {theme_config["theme.primaryColor"]} !important; /* Texto na cor primária */
-    }}
-
-        /* Ajusta texto e fundo nos botões */
+        .nav-link.active {{
+            background-color: {theme_config["theme.primaryColor"]} !important;
+            color: #FFFFFF !important;
+            font-weight: bold !important;
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+        }}
+        .nav-link.active .icon {{
+            color: #FFFFFF !important;
+        }}
+        .nav-link {{
+            color: {theme_config["theme.textColor"]} !important;
+            transition: background-color 0.3s, color 0.3s;
+        }}
+        .nav-link:hover {{
+            background-color: {theme_config["theme.primaryColor"]}33;
+            color: {theme_config["theme.primaryColor"]} !important;
+        }}
         .stButton>button {{
             background-color: {theme_config["theme.primaryColor"]} !important;
             color: #FFFFFF !important;
         }}
-
-        /* ===== [GENÉRICO] ===== */
-        /* Ajusta elementos dinâmicos */
         .st-emotion-cache-1cj4yv0,
         .st-emotion-cache-efbu8t {{
             background-color: {theme_config["theme.secondaryBackgroundColor"]} !important;
-        
         }}
-        
-        /* ===== [COMPONENTES ESPECÍFICOS] ===== */
         .stMultiSelect span[data-baseweb="tag"] {{
             background-color: {theme_config["theme.primaryColor"]} !important;
             color: white !important;
         }}
-
         .stButton>button p {{
             color: white !important;
         }}
-
         div[data-testid="stMetricValue"] {{
             color: {theme_config["theme.textColor"]} !important;
         }}
-
-        [class*="stMetric"]
-        {{
+        [class*="stMetric"] {{
             color: {theme_config["theme.textColor"]} !important;
         }}
-        
         [class*="st-emotion-cache"] {{
             color: {theme_config["theme.primaryColor"]} !important;
         }}
-
         </style>
         """,
         unsafe_allow_html=True
     )
 
+# Inicializa tema e aplica CSS
+init_theme()
+apply_custom_css()
 
-# Carregar credenciais do secrets.toml
+if st.button(st.session_state.themes[st.session_state.themes["current_theme"]]["button_face"], on_click=change_theme):
+    pass
+
+# ==========================================
+# 2. Conexão com Banco de Dados e Consulta
+# ==========================================
 def get_db_credentials():
     return st.secrets["database"]
 
-# Conectar ao banco de dados
 def get_connection():
     creds = get_db_credentials()
-    return pyodbc.connect(f"DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={creds['server']};DATABASE={creds['database']};UID={creds['username']};PWD={creds['password']}")
+    return pyodbc.connect(
+        f"DRIVER={{ODBC Driver 17 for SQL Server}};"
+        f"SERVER={creds['server']};"
+        f"DATABASE={creds['database']};"
+        f"UID={creds['username']};"
+        f"PWD={creds['password']}"
+    )
 
-# Consulta os dados do banco de dados
 def fetch_data():
     cnxn = get_connection()
     query = """
 EXEC sp_HeatMapComprasVendas '2024-01-01', '2024-12-31'
     """
-    
     try:
         cursor = cnxn.cursor()
         cursor.execute(query)
         if cursor.description is None:
             st.warning("A consulta não retornou dados.")
-            return pd.DataFrame()  # Retorna um DataFrame vazio para evitar erro
-        
-        df = pd.DataFrame(cursor.fetchall(), columns=[desc[0] for desc in cursor.description])
+            return pd.DataFrame()
+        rows = cursor.fetchall()
+        # Se cada linha for um tuple com 1 elemento que é, por sua vez, uma tupla com os dados esperados, "desempacota"
+        if rows and isinstance(rows[0][0], tuple):
+            rows = [row[0] for row in rows]
+        # Cria o DataFrame usando os nomes das colunas conforme o cursor.description
+        columns = [desc[0] for desc in cursor.description]
+        df = pd.DataFrame(rows, columns=columns)
         cnxn.close()
         return df
     except Exception as e:
         st.error(f"Erro ao buscar dados: {e}")
         return pd.DataFrame()
 
-# Criar Heatmap
+# ==========================================
+# 3. Funções de Plotagem
+# ==========================================
 def plot_heatmap(data, column, title):
-    pivot_table = data.pivot_table(index='COD_FABR', columns='MES', values=column, aggfunc='sum', fill_value=0)
-    plt.figure(figsize=(14, 10))
-    sns.heatmap(
-        pivot_table,
-        annot=True,
-        fmt=".0f",
-        cmap="coolwarm" if "Diferença" in title else "Blues",
-        linewidths=0.5,
-        cbar_kws={'label': 'Valor em R$'},
-        norm=LogNorm() if column != 'DIFERENCA_VALORES' else None
-    )
-    plt.title(f'Heatmap de {title}', fontsize=14)
-    plt.xlabel('Mês')
-    plt.ylabel('Fabricante')
-    st.pyplot(plt)
-    plt.close()
+    try:
+        pivot_table = data.pivot_table(index='COD_FABR', columns='MES', values=column, aggfunc='sum', fill_value=0)
+        plt.figure(figsize=(14, 10))
+        sns.heatmap(
+            pivot_table,
+            annot=True,
+            fmt=".0f",
+            cmap="coolwarm" if "Diferença" in title else "Blues",
+            linewidths=0.5,
+            cbar_kws={'label': 'Valor em R$'},
+            norm=LogNorm() if column != 'DIFERENCA_VALORES' else None
+        )
+        plt.title(f'Heatmap de {title}', fontsize=14)
+        plt.xlabel('Mês')
+        plt.ylabel('Fabricante')
+        st.pyplot(plt)
+        plt.close()
+    except Exception as e:
+        st.error(f"Erro ao plotar heatmap de {title}: {e}")
 
-# Criar gráfico de colunas
 def plot_bar_chart(data):
     st.subheader("Gráfico de Colunas")
-    df_grouped = data.groupby('COD_FABR')[['VALOR_COMPRADO', 'VALOR_VENDIDO']].sum().reset_index()
-    st.bar_chart(df_grouped.set_index('COD_FABR'))
+    try:
+        df_grouped = data.groupby('COD_FABR')[['VALOR_COMPRADO', 'VALOR_VENDIDO']].sum().reset_index()
+        st.bar_chart(df_grouped.set_index('COD_FABR'))
+    except Exception as e:
+        st.error(f"Erro ao plotar gráfico de barras: {e}")
 
-# Aplicação Streamlit
+# ==========================================
+# 4. Aplicação Principal
+# ==========================================
 st.title("Análise de Compras e Vendas por Fabricante")
 df = fetch_data()
 
-fabricantes = df['COD_FABR'].unique()
-escolha_fabricante = st.selectbox("Escolha o Fabricante", fabricantes)
-df_filtrado = df[df['COD_FABR'] == escolha_fabricante]
-
-plot_heatmap(df_filtrado, 'VALOR_COMPRADO', 'Compras')
-plot_heatmap(df_filtrado, 'VALOR_VENDIDO', 'Vendas')
-plot_heatmap(df_filtrado, 'DIFERENCA_VALORES', 'Diferença Compra-Venda')
-plot_bar_chart(df_filtrado)
-
-# Heatmap dos Top 10 Fabricantes
-mostrar_top10 = st.checkbox("Exibir Heatmap dos Top 10 Fabricantes Mais Comprados")
-if mostrar_top10:
-    top10_fabricantes = df.groupby('COD_FABR')['VALOR_COMPRADO'].sum().nlargest(10).index
-    df_top10 = df[df['COD_FABR'].isin(top10_fabricantes)]
-    plot_heatmap(df_top10, 'VALOR_COMPRADO', 'Top 10 Fabricantes Mais Comprados')
+if df.empty:
+    st.info("Nenhum dado foi retornado da consulta.")
+else:
+    # Seleciona o fabricante (caso as colunas estejam conforme o esperado)
+    try:
+        fabricantes = df['COD_FABR'].unique()
+        escolha_fabricante = st.selectbox("Escolha o Fabricante", fabricantes)
+        df_filtrado = df[df['COD_FABR'] == escolha_fabricante]
+    
+        plot_heatmap(df_filtrado, 'VALOR_COMPRADO', 'Compras')
+        plot_heatmap(df_filtrado, 'VALOR_VENDIDO', 'Vendas')
+        plot_heatmap(df_filtrado, 'DIFERENCA_VALORES', 'Diferença Compra-Venda')
+        plot_bar_chart(df_filtrado)
+    
+        # Heatmap dos Top 10 Fabricantes
+        mostrar_top10 = st.checkbox("Exibir Heatmap dos Top 10 Fabricantes Mais Comprados")
+        if mostrar_top10:
+            top10_fabricantes = df.groupby('COD_FABR')['VALOR_COMPRADO'].sum().nlargest(10).index
+            df_top10 = df[df['COD_FABR'].isin(top10_fabricantes)]
+            plot_heatmap(df_top10, 'VALOR_COMPRADO', 'Top 10 Fabricantes Mais Comprados')
+    except KeyError as e:
+        st.error(f"Erro ao acessar coluna no DataFrame: {e}")
