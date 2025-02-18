@@ -385,6 +385,19 @@ else:
         col2.metric("Total Vendido", format_currency(df['VALOR_VENDIDO'].sum()))
         col3.metric("Diferença", format_currency(df['DIFERENCA_VALORES'].sum()))
         
+            
+        # Abas para visualizações dos gráficos
+        tab1, tab2, tab3 = st.tabs(["Compras", "Vendas", "Diferença"])
+        with tab1:
+            plot_heatmap(df, 'VALOR_COMPRADO', 'Compras')
+        with tab2:
+            plot_heatmap(df, 'VALOR_VENDIDO', 'Vendas')
+        with tab3:
+            plot_heatmap(df, 'DIFERENCA_VALORES', 'Diferença Compra-Venda')
+        
+        # Gráfico de barras
+        plot_bar_chart(df)
+        
         # Expander para tabela completa
         with st.expander("Ver dados completos"):
             # Renomeia colunas para exibição
@@ -422,19 +435,6 @@ else:
                     }),
                     use_container_width=True, hide_index=True
                 )
-            
-        # Abas para visualizações dos gráficos
-        tab1, tab2, tab3 = st.tabs(["Compras", "Vendas", "Diferença"])
-        with tab1:
-            plot_heatmap(df, 'VALOR_COMPRADO', 'Compras')
-        with tab2:
-            plot_heatmap(df, 'VALOR_VENDIDO', 'Vendas')
-        with tab3:
-            plot_heatmap(df, 'DIFERENCA_VALORES', 'Diferença Compra-Venda')
-        
-        # Gráfico de barras
-        plot_bar_chart(df)
-        
     except KeyError as e:
         st.error(f"Erro de estrutura de dados: {str(e)}")
         st.write("Colunas disponíveis:", df.columns.tolist())
