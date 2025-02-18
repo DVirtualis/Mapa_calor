@@ -411,21 +411,21 @@ else:
                 bg_diferenca = "#4d004d"  # Lilás
 
             col1.markdown(f"""
-            <div style="padding: 10px; background-color: {bg_comprado}; border-radius: 5px; text-align: center;">
+            <div style="padding: 10px; color: {bg_comprado}; border-radius: 5px; text-align: center;">
                 <span style="font-size: 16px; font-weight: bold;">Total Comprado</span>
                 <h2 style="margin: 0;">{format_currency(total_comprado)}</h2>
             </div>
             """, unsafe_allow_html=True)
 
             col2.markdown(f"""
-            <div style="padding: 10px; background-color: {bg_vendido}; border-radius: 5px; text-align: center;">
+            <div style="padding: 10px; color: {bg_vendido}; border-radius: 5px; text-align: center;">
                 <span style="font-size: 16px; font-weight: bold;">Total Vendido</span>
                 <h2 style="margin: 0;">{format_currency(total_vendido)}</h2>
             </div>
             """, unsafe_allow_html=True)
 
             col3.markdown(f"""
-            <div style="padding: 10px; background-color: {bg_diferenca}; border-radius: 5px; text-align: center;">
+            <div style="padding: 10px; color: {bg_diferenca}; border-radius: 5px; text-align: center;">
                 <span style="font-size: 16px; font-weight: bold;">Diferença</span>
                 <h2 style="margin: 0;">{format_currency(diferenca)}</h2>
             </div>
