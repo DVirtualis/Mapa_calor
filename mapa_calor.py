@@ -201,7 +201,7 @@ EXEC sp_HeatMapComprasVendas '2024-01-01', '2024-12-31'
 # ==========================================
 def plot_heatmap(data, column, title):
     try:
-        pivot_table = data.pivot_table(index='COD_FABR', columns='MES', values=column, aggfunc='sum', fill_value=0)
+        pivot_table = data.pivot_table(index='NOME_FABR', columns='MES', values=column, aggfunc='sum', fill_value=0)
         plt.figure(figsize=(14, 10))
         sns.heatmap(
             pivot_table,
@@ -223,8 +223,8 @@ def plot_heatmap(data, column, title):
 def plot_bar_chart(data):
     st.subheader("Gráfico de Colunas")
     try:
-        df_grouped = data.groupby('COD_FABR')[['VALOR_COMPRADO', 'VALOR_VENDIDO']].sum().reset_index()
-        st.bar_chart(df_grouped.set_index('COD_FABR'))
+        df_grouped = data.groupby('NOME_FABR')[['VALOR_COMPRADO', 'VALOR_VENDIDO']].sum().reset_index()
+        st.bar_chart(df_grouped.set_index('NOME_FABR'))
     except Exception as e:
         st.error(f"Erro ao plotar gráfico de barras: {e}")
 
@@ -238,9 +238,9 @@ if df.empty:
     st.info("Nenhum dado foi retornado da consulta.")
 else:
     try:
-        fabricantes = df['COD_FABR'].unique()
+        fabricantes = df['NOME_FABR'].unique()
         escolha_fabricante = st.selectbox("Escolha o Fabricante", fabricantes)
-        df_filtrado = df[df['COD_FABR'] == escolha_fabricante]
+        df_filtrado = df[df['NOME_FABR'] == escolha_fabricante]
     
         plot_heatmap(df_filtrado, 'VALOR_COMPRADO', 'Compras')
         plot_heatmap(df_filtrado, 'VALOR_VENDIDO', 'Vendas')
@@ -250,8 +250,8 @@ else:
         # Heatmap dos Top 10 Fabricantes
         mostrar_top10 = st.checkbox("Exibir Heatmap dos Top 10 Fabricantes Mais Comprados")
         if mostrar_top10:
-            top10_fabricantes = df.groupby('COD_FABR')['VALOR_COMPRADO'].sum().nlargest(10).index
-            df_top10 = df[df['COD_FABR'].isin(top10_fabricantes)]
+            top10_fabricantes = df.groupby('NOME_FABR')['VALOR_COMPRADO'].sum().nlargest(10).index
+            df_top10 = df[df['NOME_FABR'].isin(top10_fabricantes)]
             plot_heatmap(df_top10, 'VALOR_COMPRADO', 'Top 10 Fabricantes Mais Comprados')
     except KeyError as e:
         st.error(f"Erro ao acessar coluna no DataFrame: {e}")
