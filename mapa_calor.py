@@ -275,10 +275,17 @@ def format_currency(value):
 # ==========================================
 def plot_heatmap(data, column, title):
     try:
+        # Verifica se as colunas necessárias estão presentes
         if 'Mês' not in data.columns or column not in data.columns:
             st.error("Coluna 'Mês' ou a métrica especificada não foram encontradas")
             return
         
+        # Cria uma pivot_table com:
+        # - index: cada linha representando um fabricante (NOMEFABR)
+        # - columns: cada coluna representando um mês (Mês)
+        # - values: os valores da métrica especificada (por exemplo, VALOR_COMPRADO)
+        # - aggfunc='sum': soma os valores para cada combinação fabricante/mês
+        # - fill_value=0: preenche com 0 onde não há dados
         pivot_table = data.pivot_table(
             index='NOMEFABR', 
             columns='Mês', 
@@ -287,9 +294,14 @@ def plot_heatmap(data, column, title):
             fill_value=0
         )
         
-        pivot_table = pivot_table.reindex(columns=['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
-                                                      'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'], fill_value=0)
+        # Reordena as colunas para garantir a ordem correta dos meses, preenchendo com 0 se faltar algum
+        pivot_table = pivot_table.reindex(
+            columns=['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
+                     'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
+            fill_value=0
+        )
         
+        # Cria o heatmap usando px.imshow a partir da pivot_table
         fig = px.imshow(
             pivot_table,
             labels=dict(x="Mês", y="Fabricante", color="Valor (R$)"),
@@ -297,9 +309,22 @@ def plot_heatmap(data, column, title):
             color_continuous_scale='Blues' if 'Compra' in title else 'Greens',
             text_auto=".2s"
         )
+        
+        # Atualiza o layout para aumentar o espaço entre as colunas:
+        # - Define a largura (width) maior para expandir o gráfico.
+        # - Define margens para que os labels não fiquem muito juntos.
+        # - Define o modo dos ticks (tickmode) e especifica manualmente os valores (tickvals) e textos (ticktext)
         fig.update_layout(
-            xaxis=dict(side="top", tickangle=-45),
-            height=600
+            xaxis=dict(
+                side="top",
+                tickangle=-45,
+                tickmode='array',
+                tickvals=list(range(len(pivot_table.columns))),
+                ticktext=list(pivot_table.columns)
+            ),
+            height=600,
+            width=1000,
+            margin=dict(l=50, r=50, t=100, b=100)
         )
         st.plotly_chart(fig, use_container_width=True)
     except Exception as e:
