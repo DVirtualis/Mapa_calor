@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.express as px
 import pyodbc
 import toml
+import json  # necessário para converter JSON em dict
 from datetime import datetime, timedelta
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -156,7 +157,6 @@ if st.button(st.session_state.themes[st.session_state.themes["current_theme"]]["
 def get_db_credentials():
     return st.secrets["database"]
 
-# Use st.cache_resource para objetos não serializáveis, como conexões
 @st.cache_resource
 def get_connection():
     creds = get_db_credentials()
@@ -176,7 +176,7 @@ EXEC sp_HeatMapComprasVendas '2024-01-01', '2024-12-31'
     try:
         cursor = cnxn.cursor()
         cursor.execute(query)
-        # Avança para o conjunto de resultados que contenha dados
+        # Avança para o conjunto de resultados com dados
         while cursor.description is None:
             if not cursor.nextset():
                 break
@@ -186,13 +186,27 @@ EXEC sp_HeatMapComprasVendas '2024-01-01', '2024-12-31'
         rows = cursor.fetchall()
         columns = [desc[0] for desc in cursor.description]
         
-        # Se cada linha for um tuple com 1 elemento e esse elemento for iterável com tamanho igual ao número de colunas, desempacota:
+        # Se cada linha contém apenas um elemento, verifique se é uma string JSON
         if rows and len(rows[0]) == 1:
             sample = rows[0][0]
-            if hasattr(sample, '__iter__') and not isinstance(sample, (str, bytes)) and len(sample) == len(columns):
+            if isinstance(sample, str):
+                try:
+                    # Converte cada linha (string JSON) em um dicionário
+                    parsed_rows = [json.loads(r[0]) for r in rows]
+                    df = pd.DataFrame(parsed_rows)
+                except Exception as e:
+                    st.error(f"Erro ao converter JSON: {e}")
+                    return pd.DataFrame()
+            elif hasattr(sample, '__iter__') and not isinstance(sample, (str, bytes)) and len(sample) == len(columns):
+                # Caso seja um tuple/list com o número esperado de colunas
                 rows = [tuple(r[0]) for r in rows]
-        
-        df = pd.DataFrame(rows, columns=columns)
+                df = pd.DataFrame(rows, columns=columns)
+            else:
+                # Se não atender a nenhum dos casos, tenta criar o DataFrame diretamente
+                df = pd.DataFrame(rows, columns=columns)
+        else:
+            df = pd.DataFrame(rows, columns=columns)
+            
         cnxn.close()
         return df
     except Exception as e:
