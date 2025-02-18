@@ -11,16 +11,21 @@ import numpy as np
 from matplotlib.colors import LogNorm
 
 # Função para obter conexão com o banco de dados
+def get_db_credentials():
+    return st.secrets["database"]
+
+# Use st.cache_resource para objetos não serializáveis, como conexões
+@st.cache_resource
 def get_connection():
-    config = toml.load("secrets.toml")
-    connection_string = (
-        f"DRIVER={config['database']['driver']};"
-        f"SERVER={config['database']['server']};"
-        f"DATABASE={config['database']['database']};"
-        f"UID={config['database']['username']};"
-        f"PWD={config['database']['password']}"
+    creds = get_db_credentials()
+    return pyodbc.connect(
+        f"DRIVER={{ODBC Driver 17 for SQL Server}};"
+        f"SERVER={creds['server']};"
+        f"DATABASE={creds['database']};"
+        f"UID={creds['username']};"
+        f"PWD={creds['password']}"
     )
-    return pyodbc.connect(connection_string)
+
 
 # Configuração da página
 st.set_page_config(
