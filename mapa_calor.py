@@ -176,20 +176,9 @@ def fetch_data():
         with get_connection() as cnxn:
             # Ler diretamente com pandas
             df = pd.read_sql("EXEC sp_HeatMapComprasVendas '2024-01-01', '2024-12-31'", cnxn)
-            
             # Se a coluna dos meses vem sem acento, renomeia para 'Mês'
             if 'Mes' in df.columns and 'Mês' not in df.columns:
                 df = df.rename(columns={'Mes': 'Mês'})
-            
-            # Converter a coluna 'Mês' em variável categórica com ordem adequada, se existir
-            if 'Mês' in df.columns:
-                df['Mês'] = pd.Categorical(
-                    df['Mês'],
-                    categories=['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
-                                'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
-                    ordered=True
-                )
-            
             return df
     except Exception as e:
         st.error(f"Erro ao buscar dados: {e}")
@@ -211,7 +200,16 @@ def plot_heatmap(data, column, title):
         if column not in data.columns:
             st.error(f"Coluna '{column}' não encontrada nos dados")
             return
-        pivot_table = data.pivot_table(
+        # Cria uma cópia para formatação do mês, sem alterar o DataFrame original
+        plot_data = data.copy()
+        if 'Mês' in plot_data.columns:
+            plot_data['Mês'] = pd.Categorical(
+                plot_data['Mês'],
+                categories=['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
+                            'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
+                ordered=True
+            )
+        pivot_table = plot_data.pivot_table(
             index='NOMEFABR', 
             columns='Mês', 
             values=column, 
@@ -236,7 +234,6 @@ def plot_heatmap(data, column, title):
 def plot_bar_chart(data):
     st.subheader("Gráfico de Colunas")
     try:
-        # Agrupar dados sem converter para strings
         df_grouped = data.groupby('NOMEFABR')[['VALOR_COMPRADO', 'VALOR_VENDIDO']].sum().reset_index()
         st.bar_chart(df_grouped.set_index('NOMEFABR'))
     except Exception as e:
@@ -272,7 +269,7 @@ else:
         col2.metric("Total Vendido", format_currency(df['VALOR_VENDIDO'].sum()))
         col3.metric("Diferença", format_currency(df['DIFERENCA_VALORES'].sum()))
         
-        # Exibir os dados tabelados em um expander
+        # Exibe os dados tabelados em um expander
         with st.expander("Ver dados completos"):
             st.dataframe(df)
         
