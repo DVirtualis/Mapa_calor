@@ -357,14 +357,7 @@ df = fetch_data()
 if df.empty:
     st.info("Nenhum dado foi retornado da consulta.")
 else:
-    try:
-        # Renomeia as colunas para padronização
-        df = df.rename(columns={
-            'NOMEFABR': 'Fabricante',
-            'ValorComprado': 'VALOR_COMPRADO',
-            'ValorVendido': 'VALOR_VENDIDO',
-            'DiferencaValores': 'DIFERENCA_VALORES'
-        })
+   
         
         # Filtro de Fabricante
         fabricantes = ['Todos'] + sorted(df['Fabricante'].unique().tolist())
@@ -398,43 +391,54 @@ else:
         # Gráfico de barras
         plot_bar_chart(df)
         
-        # Expander para tabela completa
-        with st.expander("Ver dados completos"):
-            # Renomeia colunas para exibição
-            df_exibicao = df.copy()
-            # Se desejar incluir Ano e Mês, eles já estão na tabela
-            df_exibicao = df_exibicao.rename(columns={
-                'Fabricante': 'Fabricante',
-                'ANO': 'Ano',
-                'Mês': 'Mês',
-                'VALOR_COMPRADO': 'Valor Comprado',
-                'VALOR_VENDIDO': 'Valor Vendido',
-                'DIFERENCA_VALORES': 'Diferença de Valores'
+        try:
+            # Renomeia as colunas para padronização
+            df = df.rename(columns={
+                'NOMEFABR': 'Fabricante',
+                'ValorComprado': 'VALOR_COMPRADO',
+                'ValorVendido': 'VALOR_VENDIDO',
+                'DiferencaValores': 'DIFERENCA_VALORES'
             })
-            st.dataframe(df_exibicao, use_container_width=True)
-        
-        # Expander para Top 10 Fabricantes (apenas se 'Todos' estiver selecionado)
-        if escolha_fabricante == 'Todos':
-            with st.expander("Ver Top 10 Fabricantes"):
-                top10 = df.groupby('Fabricante').agg({
-                    'VALOR_COMPRADO': 'sum',
-                    'VALOR_VENDIDO': 'sum',
-                    'DIFERENCA_VALORES': 'sum'
-                }).nlargest(10, 'VALOR_VENDIDO').reset_index()
-                top10 = top10.rename(columns={
+            # Expander para tabela completa
+            with st.expander("Ver dados completos"):
+                # Renomeia colunas para exibição
+                df_exibicao = df.copy()
+                # Se desejar incluir Ano e Mês, eles já estão na tabela
+                df_exibicao = df_exibicao.rename(columns={
                     'Fabricante': 'Fabricante',
+                    'ANO': 'Ano',
+                    'Mês': 'Mês',
                     'VALOR_COMPRADO': 'Valor Comprado',
                     'VALOR_VENDIDO': 'Valor Vendido',
                     'DIFERENCA_VALORES': 'Diferença de Valores'
                 })
-                st.dataframe(
-                    top10.style.format({
-                        'Valor Comprado': lambda x: format_currency(x),
-                        'Valor Vendido': lambda x: format_currency(x),
-                        'Diferença de Valores': lambda x: format_currency(x)
-                    }),
-                    use_container_width=True, hide_index=True
-                )
-    except KeyError as e:
-        st.error(f"Erro de estrutura de dados: {str(e)}")
-        st.write("Colunas disponíveis:", df.columns.tolist())
+                st.dataframe(df_exibicao, use_container_width=True)
+            
+            # Expander para Top 10 Fabricantes (apenas se 'Todos' estiver selecionado)
+            if escolha_fabricante == 'Todos':
+                with st.expander("Ver Top 10 Fabricantes"):
+                    top10 = df.groupby('Fabricante').agg({
+                        'VALOR_COMPRADO': 'sum',
+                        'VALOR_VENDIDO': 'sum',
+                        'DIFERENCA_VALORES': 'sum'
+                    }).nlargest(10, 'VALOR_VENDIDO').reset_index()
+                    top10 = top10.rename(columns={
+                        'Fabricante': 'Fabricante',
+                        'VALOR_COMPRADO': 'Valor Comprado',
+                        'VALOR_VENDIDO': 'Valor Vendido',
+                        'DIFERENCA_VALORES': 'Diferença de Valores'
+                    })
+                    st.dataframe(
+                        top10.style.format({
+                            'Valor Comprado': lambda x: format_currency(x),
+                            'Valor Vendido': lambda x: format_currency(x),
+                            'Diferença de Valores': lambda x: format_currency(x)
+                        }),
+                        use_container_width=True, hide_index=True
+                    )
+                    
+                    
+        except KeyError as e:
+                    st.error(f"Erro de estrutura de dados: {str(e)}")
+                    st.write("Colunas disponíveis:", df.columns.tolist())
+    
