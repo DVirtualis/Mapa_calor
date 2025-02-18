@@ -292,7 +292,7 @@ else:
                 'VALOR_COMPRADO': 'sum',
                 'VALOR_VENDIDO': 'sum',
                 'DIFERENCA_VALORES': 'sum'
-            }).nlargest(10, 'VALOR_COMPRADO')
+            }).nlargest(10, 'VALOR_VENDIDO')
             st.dataframe(
                 top10.style.format({
                     'VALOR_COMPRADO': lambda x: format_currency(x),
