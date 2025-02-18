@@ -169,15 +169,29 @@ if st.button(st.session_state.themes[st.session_state.themes["current_theme"]]["
 
 # ==========================================
 # 2. Conexão com Banco de Dados e Consulta (MODIFICADO)
+# ==========================================# ==========================================
+# Campos para selecionar o período desejado
+# ==========================================
+st.sidebar.subheader("Filtro de Período")
+data_inicial = st.sidebar.date_input("Data Inicial", value=datetime(2024, 1, 1))
+data_final = st.sidebar.date_input("Data Final", value=datetime(2024, 12, 31))
+if data_inicial > data_final:
+    st.sidebar.error("Data Inicial deve ser menor ou igual à Data Final.")
+
+# ==========================================
+# 2. Conexão com Banco de Dados e Consulta (MODIFICADO)
 # ==========================================
 @st.cache_data(ttl=3600)
-def fetch_data():
+def fetch_data(data_inicial, data_final):
     try:
         with get_connection() as cnxn:
+            # Formata as datas para o formato 'YYYY-MM-DD'
+            str_data_inicial = data_inicial.strftime("%Y-%m-%d")
+            str_data_final = data_final.strftime("%Y-%m-%d")
             df = pd.read_sql(
-                """
-DECLARE @DataInicial DATE = '2024-01-01', 
-        @DataFinal DATE = '2024-12-31';
+                f"""
+DECLARE @DataInicial DATE = '{str_data_inicial}', 
+        @DataFinal DATE = '{str_data_final}';
 
 -- CTE para Compras Corrigida
 WITH ComprasCTE AS (
