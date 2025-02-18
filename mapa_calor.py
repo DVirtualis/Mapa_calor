@@ -330,6 +330,7 @@ def plot_heatmap(data, column, title):
     except Exception as e:
         st.error(f"Erro ao plotar heatmap: {str(e)}")
 
+
 def plot_bar_chart(data):
     st.subheader("Gráfico de Colunas")
     try:
