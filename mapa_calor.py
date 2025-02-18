@@ -377,16 +377,7 @@ else:
         col2.metric("Total Vendido", format_currency(df['VALOR_VENDIDO'].sum()))
         col3.metric("Diferença", format_currency(df['DIFERENCA_VALORES'].sum()))
         
-        # Exibe os dados completos em um expander (renomeando as colunas apenas para exibição)
-        with st.expander("Ver dados completos"):
-            df_table = df.copy()
-            df_table = df_table.rename(columns={
-                'NOMEFABR': 'Fabricante',
-                'VALOR_COMPRADO': 'Valor Comprado',
-                'VALOR_VENDIDO': 'Valor Vendido',
-                'DIFERENCA_VALORES': 'Diferença de Valores'
-            })
-            st.dataframe(df_table)
+       
         
         # Abas para visualizações dos gráficos (usam o DataFrame com nomes originais)
         tab1, tab2, tab3 = st.tabs(["Compras", "Vendas", "Diferença"])
@@ -399,7 +390,23 @@ else:
         
         # Gráfico de barras
         plot_bar_chart(df)
-        
+         # Exibe os dados completos em um expander (renomeando as colunas apenas para exibição)
+        with st.expander("Ver dados completos"):
+            df_table = df.copy()
+            df_table = df_table.rename(columns={
+                'COD_FABR': 'Código Fabr.',              
+                'NOMEFABR': 'Fabricante',
+                'VALOR_COMPRADO': 'Valor Comprado',
+                'VALOR_VENDIDO': 'Valor Vendido',
+                'DIFERENCA_VALORES': 'Diferença de Valores'
+            })
+            st.dataframe(df_table.style.format({
+                        'Valor Comprado': lambda x: format_currency(x),
+                        'Valor Vendido': lambda x: format_currency(x),
+                        'Diferença de Valores': lambda x: format_currency(x)
+                    }),
+                    use_container_width=True, hide_index=True
+                )
         # Exibe o Top 10 Fabricantes em outro expander (apenas se 'Todos' estiver selecionado)
         if escolha_fabricante == 'Todos':
             with st.expander("Top 10 Fabricantes"):
