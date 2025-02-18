@@ -413,7 +413,7 @@ else:
             col1.markdown(f"""
             <div style="padding: 10px; color: {bg_comprado}; border-radius: 5px; text-align: center;">
                 <span style="font-size: 16px; font-weight: bold;">Total Comprado</span>
-                <h2 style="margin: 0;color: {bg_comprado}">{format_currency(total_comprado)}</h2>
+                <h2 style="margin: 0;color: {bg_comprado};">{format_currency(total_comprado)}</h2>
             </div>
             """, unsafe_allow_html=True)
 
@@ -427,7 +427,7 @@ else:
             col3.markdown(f"""
             <div style="padding: 10px; color: {bg_diferenca}; border-radius: 5px; text-align: center;">
                 <span style="font-size: 16px; font-weight: bold;">Diferença</span>
-                <h2 style="margin: 0; color: {bg_diferenca}">{format_currency(diferenca)}</h2>
+                <h2 style="margin: 0; color: {bg_diferenca};">{format_currency(diferenca)}</h2>
             </div>
             """, unsafe_allow_html=True)
         
