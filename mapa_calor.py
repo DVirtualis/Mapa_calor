@@ -305,7 +305,7 @@ def plot_heatmap(data, column, title):
         # Cria o heatmap usando px.imshow a partir da pivot_table
         fig = px.imshow(
             pivot_table,
-            labels=dict(x="Mês", y="Fabricante", color="Valor (R$)"),
+            labels=dict(x= "Fabricante",y="Mês" ,color="Valor (R$)"),
             title=f'Heatmap de {title}',
             color_continuous_scale='Blues' if 'Compra' in title else 'Greens',
             text_auto=".2s"
