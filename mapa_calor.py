@@ -402,32 +402,35 @@ else:
 
             # Define as cores de fundo
             bg_comprado = "#FFA500"   # Amarelo alaranjado
-            bg_vendido = "#00CED1"    # Azul esverdeado
+            bg_vendido = "#036a6c"    # Azul esverdeado
             if diferenca > 0:
-                bg_diferenca = "#084a91"  # Azul
+                bg_diferenca = "#3076c2"  # Azul
+                font_diferenca = "#cd7f26" # Azul
             elif diferenca < 0:
                 bg_diferenca = "#ff0000"  # Vermelho
+                font_diferenca = "#0d09e8" # Branco
             else:
                 bg_diferenca = "#4d004d"  # Lilás
+                font_diferenca = "#0eddf0" # Branco
 
             col1.markdown(f"""
             <div style="padding: 10px; background-color: {bg_comprado}; border-radius: 5px; text-align: center;">
                 <span style="font-size: 16px; font-weight: bold;">Total Comprado</span>
-                <h2 style="margin: 0;">{format_currency(total_comprado)}</h2>
+                <h2 style="margin: 0; color: {font_diferenca} !important;">{format_currency(total_comprado)}</h2>
             </div>
             """, unsafe_allow_html=True)
 
             col2.markdown(f"""
             <div style="padding: 10px; background-color: {bg_vendido}; border-radius: 5px; text-align: center;">
                 <span style="font-size: 16px; font-weight: bold;">Total Vendido</span>
-                <h2 style="margin: 0;">{format_currency(total_vendido)}</h2>
+                <h2 style="margin: 0; color: {font_diferenca} !important;">{format_currency(total_vendido)}</h2>
             </div>
             """, unsafe_allow_html=True)
 
             col3.markdown(f"""
             <div style="padding: 10px; background-color: {bg_diferenca}; border-radius: 5px; text-align: center;">
                 <span style="font-size: 16px; font-weight: bold;">Diferença</span>
-                <h2 style="margin: 0;">{format_currency(diferenca)}</h2>
+                <h2 style="margin: 0; color: {font_diferenca} !important;">{format_currency(diferenca)}</h2>
             </div>
             """, unsafe_allow_html=True)
         
