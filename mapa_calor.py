@@ -174,8 +174,9 @@ if st.button(st.session_state.themes[st.session_state.themes["current_theme"]]["
 def fetch_data():
     try:
         with get_connection() as cnxn:
-            # Ler diretamente com pandas
-            df = pd.read_sql("""DECLARE @DataInicial DATE = '2024-01-01', 
+            df = pd.read_sql(
+                """
+DECLARE @DataInicial DATE = '2024-01-01', 
         @DataFinal DATE = '2024-12-31';
 
 -- CTE para Compras Corrigida
@@ -189,13 +190,12 @@ WITH ComprasCTE AS (
     FROM Movimento m
     INNER JOIN ItensMov im ON m.IdMov = im.IdMov
     INNER JOIN Produtos p ON im.IdProduto = p.IdProduto
-    INNER JOIN Fabricantes f ON p.CodFabr = f.CodFabr -- Corrigido o JOIN
+    INNER JOIN Fabricantes f ON p.CodFabr = f.CodFabr
     WHERE m.TipoMov IN ('1.1', '1.6')
       AND m.DtMov BETWEEN @DataInicial AND @DataFinal
     GROUP BY f.CodFabr, f.NOMEFABR, YEAR(m.DtMov), MONTH(m.DtMov)
 ),
-
--- CTE para Vendas (mantida igual)
+-- CTE para Vendas
 Vendas AS (
     SELECT 
        bi.CodFabr,
@@ -228,7 +228,6 @@ Vendas AS (
       AND DATEFROMPARTS(bi.anovenda, bi.mesvenda, 1) BETWEEN @DataInicial AND @DataFinal
     GROUP BY bi.CodFabr, bi.nomefabr, bi.anovenda, bi.mesvenda
 )
-
 SELECT 
     COALESCE(c.CodFabr, v.CodFabr) AS COD_FABR,
     COALESCE(c.NOMEFABR, v.nomefabr) AS NOMEFABR,
@@ -242,31 +241,27 @@ FULL OUTER JOIN Vendas v
     ON c.CodFabr = v.CodFabr 
     AND c.Ano = v.Ano 
     AND c.Mes = v.Mes
-ORDER BY NOMEFABR, ANO, MES;""", cnxn)
+ORDER BY NOMEFABR, ANO, MES;
+                """, cnxn)
             # Converter nome da coluna e valores dos meses
             if 'MES' in df.columns:
-                # Renomear coluna
                 df = df.rename(columns={'MES': 'Mês'})
-                
-                # Mapear números para abreviações dos meses
                 meses_map = {
                     1: 'Jan', 2: 'Fev', 3: 'Mar', 4: 'Abr', 5: 'Mai', 6: 'Jun',
                     7: 'Jul', 8: 'Ago', 9: 'Set', 10: 'Out', 11: 'Nov', 12: 'Dez'
                 }
                 df['Mês'] = df['Mês'].map(meses_map)
-                
-                # Converter para categoria ordenada
                 df['Mês'] = pd.Categorical(
                     df['Mês'],
                     categories=['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
                                 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
                     ordered=True
                 )
-            
             return df
     except Exception as e:
         st.error(f"Erro ao buscar dados: {e}")
         return pd.DataFrame()
+
 # ==========================================
 # Função auxiliar para formatação de moeda no padrão brasileiro
 # ==========================================
@@ -274,16 +269,16 @@ def format_currency(value):
     formatted = f"R$ {value:,.2f}"
     formatted = formatted.replace(",", "TEMP").replace(".", ",").replace("TEMP", ".")
     return formatted
+
 # ==========================================
 # 3. Funções de Plotagem (ATUALIZADO)
 # ==========================================
 def plot_heatmap(data, column, title):
     try:
-        # Verificar se as colunas necessárias existem
         if 'Mês' not in data.columns or column not in data.columns:
-            st.error("Coluna 'Mês' ou métrica não encontrada")
+            st.error("Coluna 'Mês' ou a métrica especificada não foram encontradas")
             return
-            
+        
         pivot_table = data.pivot_table(
             index='NOMEFABR', 
             columns='Mês', 
@@ -292,11 +287,8 @@ def plot_heatmap(data, column, title):
             fill_value=0
         )
         
-        # Ordenar meses corretamente
-        pivot_table = pivot_table.reindex(columns=[
-            'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
-            'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'
-        ], fill_value=0)
+        pivot_table = pivot_table.reindex(columns=['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
+                                                      'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'], fill_value=0)
         
         fig = px.imshow(
             pivot_table,
@@ -305,24 +297,18 @@ def plot_heatmap(data, column, title):
             color_continuous_scale='Blues' if 'Compra' in title else 'Reds',
             text_auto=".2s"
         )
-        
         fig.update_layout(
             xaxis=dict(side="top", tickangle=-45),
             height=600
         )
-        
         st.plotly_chart(fig, use_container_width=True)
-        
     except Exception as e:
         st.error(f"Erro ao plotar heatmap: {str(e)}")
-        
+
 def plot_bar_chart(data):
     st.subheader("Gráfico de Colunas")
     try:
-        # Agrupa os dados por fabricante e soma os valores
         df_grouped = data.groupby('NOMEFABR')[['VALOR_COMPRADO', 'VALOR_VENDIDO']].sum().reset_index()
-        
-        # Converte para formato longo para facilitar o agrupamento das barras
         df_long = pd.melt(
             df_grouped, 
             id_vars=['NOMEFABR'], 
@@ -330,13 +316,9 @@ def plot_bar_chart(data):
             var_name='Tipo', 
             value_name='Valor'
         )
-        
-        # Cria uma nova coluna com os valores formatados no padrão brasileiro
         df_long['ValorFormatado'] = df_long['Valor'].apply(
             lambda x: f"R$ {x:,.2f}".replace(",", "TEMP").replace(".", ",").replace("TEMP", ".")
         )
-        
-        # Cria o gráfico de barras agrupado com as cores personalizadas e exibe o valor formatado como texto
         fig = px.bar(
             df_long, 
             x='NOMEFABR', 
@@ -346,18 +328,14 @@ def plot_bar_chart(data):
             color_discrete_map={'VALOR_COMPRADO': '#084a91', 'VALOR_VENDIDO': '#fa6547'},
             text='ValorFormatado'
         )
-        
         fig.update_layout(
             xaxis_title="Fabricante", 
             yaxis_title="Valor (R$)"
         )
-        
-        # Atualiza os traços para customizar o hover
         fig.update_traces(
             hovertemplate="Fabricante=%{x}<br>valor=%{text}<extra></extra>",
             textposition='outside'
         )
-        
         st.plotly_chart(fig, use_container_width=True)
     except Exception as e:
         st.error(f"Erro ao plotar gráfico de barras: {e}")
@@ -372,19 +350,25 @@ if df.empty:
     st.info("Nenhum dado foi retornado da consulta.")
 else:
     try:
-        # Renomeia colunas para padronização
         df = df.rename(columns={
             'ValorComprado': 'VALOR_COMPRADO',
             'ValorVendido': 'VALOR_VENDIDO',
             'DiferencaValores': 'DIFERENCA_VALORES'
         })
         
-        # Lista de fabricantes com opção 'Todos'
+        # Filtro de Fabricante
         fabricantes = ['Todos'] + sorted(df['NOMEFABR'].unique().tolist())
         escolha_fabricante = st.selectbox("Escolha o Fabricante", fabricantes, index=0)
-        
         if escolha_fabricante != 'Todos':
             df = df[df['NOMEFABR'] == escolha_fabricante]
+        
+        # Filtro Multiselect para Mês
+        # Obtém os meses disponíveis a partir do DataFrame
+        if 'Mês' in df.columns:
+            meses_disponiveis = sorted(df['Mês'].dropna().unique(), key=lambda m: ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'].index(m))
+            meses_selecionados = st.multiselect("Selecione os meses", options=meses_disponiveis, default=meses_disponiveis)
+            if meses_selecionados:
+                df = df[df['Mês'].isin(meses_selecionados)]
         
         # Exibe métricas com formatação brasileira
         col1, col2, col3 = st.columns(3)
