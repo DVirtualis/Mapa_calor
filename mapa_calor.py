@@ -343,6 +343,7 @@ def plot_bar_chart(data):
 # ==========================================
 # 4. Aplicação Principal (ATUALIZADO)
 # ==========================================
+
 st.title("Análise de Compras e Vendas por Fabricante")
 df = fetch_data()
 
@@ -350,6 +351,7 @@ if df.empty:
     st.info("Nenhum dado foi retornado da consulta.")
 else:
     try:
+        # Mantém os nomes originais para os gráficos
         df = df.rename(columns={
             'ValorComprado': 'VALOR_COMPRADO',
             'ValorVendido': 'VALOR_VENDIDO',
@@ -363,7 +365,6 @@ else:
             df = df[df['NOMEFABR'] == escolha_fabricante]
         
         # Filtro Multiselect para Mês
-        # Obtém os meses disponíveis a partir do DataFrame
         if 'Mês' in df.columns:
             meses_disponiveis = sorted(df['Mês'].dropna().unique(), key=lambda m: ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'].index(m))
             meses_selecionados = st.multiselect("Selecione os meses", options=meses_disponiveis, default=meses_disponiveis)
@@ -376,11 +377,18 @@ else:
         col2.metric("Total Vendido", format_currency(df['VALOR_VENDIDO'].sum()))
         col3.metric("Diferença", format_currency(df['DIFERENCA_VALORES'].sum()))
         
-        # Exibe os dados tabelados em um expander
+        # Exibe os dados completos em um expander (renomeando as colunas apenas para exibição)
         with st.expander("Ver dados completos"):
-            st.dataframe(df)
+            df_table = df.copy()
+            df_table = df_table.rename(columns={
+                'NOMEFABR': 'Fabricante',
+                'VALOR_COMPRADO': 'Valor Comprado',
+                'VALOR_VENDIDO': 'Valor Vendido',
+                'DIFERENCA_VALORES': 'Diferença de Valores'
+            })
+            st.dataframe(df_table)
         
-        # Abas para visualizações
+        # Abas para visualizações dos gráficos (usam o DataFrame com nomes originais)
         tab1, tab2, tab3 = st.tabs(["Compras", "Vendas", "Diferença"])
         with tab1:
             plot_heatmap(df, 'VALOR_COMPRADO', 'Compras')
@@ -392,32 +400,28 @@ else:
         # Gráfico de barras
         plot_bar_chart(df)
         
-        # Top 10 Fabricantes (apenas se 'Todos' estiver selecionado)
+        # Exibe o Top 10 Fabricantes em outro expander (apenas se 'Todos' estiver selecionado)
         if escolha_fabricante == 'Todos':
-            st.subheader("Top 10 Fabricantes")
-            top10 = df.groupby('NOMEFABR').agg({
-                'VALOR_COMPRADO': 'sum',
-                'VALOR_VENDIDO': 'sum',
-                'DIFERENCA_VALORES': 'sum'
-            }).nlargest(10, 'VALOR_VENDIDO').reset_index()
-            
-            # Renomeia as colunas conforme solicitado
-            top10 = top10.rename(columns={
-                'NOMEFABR': 'Fabricante',
-                'VALOR_COMPRADO': 'Valor Comprado',
-                'VALOR_VENDIDO': 'Valor Vendido',
-                'DIFERENCA_VALORES': 'Diferença de Valores'
-            })
-            
-            st.dataframe(
-                top10.style.format({
-                    'Valor Comprado': lambda x: format_currency(x),
-                    'Valor Vendido': lambda x: format_currency(x),
-                    'Diferença de Valores': lambda x: format_currency(x)
-                }),
-                use_container_width=True, hide_index=True
-            )
-
+            with st.expander("Top 10 Fabricantes"):
+                top10 = df.groupby('NOMEFABR').agg({
+                    'VALOR_COMPRADO': 'sum',
+                    'VALOR_VENDIDO': 'sum',
+                    'DIFERENCA_VALORES': 'sum'
+                }).nlargest(10, 'VALOR_VENDIDO').reset_index()
+                top10 = top10.rename(columns={
+                    'NOMEFABR': 'Fabricante',
+                    'VALOR_COMPRADO': 'Valor Comprado',
+                    'VALOR_VENDIDO': 'Valor Vendido',
+                    'DIFERENCA_VALORES': 'Diferença de Valores'
+                })
+                st.dataframe(
+                    top10.style.format({
+                        'Valor Comprado': lambda x: format_currency(x),
+                        'Valor Vendido': lambda x: format_currency(x),
+                        'Diferença de Valores': lambda x: format_currency(x)
+                    }),
+                    use_container_width=True, hide_index=True
+                )
             
     except KeyError as e:
         st.error(f"Erro de estrutura de dados: {str(e)}")
