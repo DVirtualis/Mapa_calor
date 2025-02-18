@@ -57,7 +57,7 @@ def init_theme():
                 "theme.base": "dark",
                 "theme.backgroundColor": "#1F2937",
                 "theme.primaryColor": "#0095fb",
-                "theme.secondaryBackgroundColor": "#d8dfe8",  # cor de fundo para elementos secundários
+                "theme.secondaryBackgroundColor": "#d8dfe8",
                 "theme.textColor": "#efefef",
                 "button_face": "Modo Claro 🌞",
                 "colors": COLORS_DARK,
@@ -72,50 +72,48 @@ def change_theme():
 
 def apply_custom_css():
     ms = st.session_state
-    current_theme = ms.themes[st.session_state.themes["current_theme"]]
+    current_theme = ms.themes["current_theme"]
+    theme_config = ms.themes[current_theme]
     st.markdown(
         f"""
         <style>
         html, body, .stApp {{
-            background-color: {current_theme["theme.backgroundColor"]};
-            color: {current_theme["theme.textColor"]};
+            background-color: {theme_config["theme.backgroundColor"]};
+            color: {theme_config["theme.textColor"]};
         }}
         .stSelectbox > div > div {{
-            background-color: {current_theme["theme.secondaryBackgroundColor"]} !important;
-            color: {current_theme["theme.textColor"]} !important;
+            background-color: {theme_config["theme.secondaryBackgroundColor"]} !important;
+            color: {theme_config["theme.textColor"]} !important;
             border-radius: 5px;
-            border: 2px solid {current_theme["theme.primaryColor"]} !important;
+            border: 2px solid {theme_config["theme.primaryColor"]} !important;
         }}
         .stSelectbox > div > div:hover {{
-            background-color: {current_theme["theme.primaryColor"]} !important;
+            background-color: {theme_config["theme.primaryColor"]} !important;
             color: #FFFFFF !important;
-            border: 2px solid {current_theme["theme.textColor"]} !important;
+            border: 2px solid {theme_config["theme.textColor"]} !important;
             border-radius: 5px;
             transition: border-color 0.3s ease-in-out;
         }}
         .stSelectbox > div > div::placeholder {{
-            color: {current_theme["theme.textColor"]} !important;
+            color: {theme_config["theme.textColor"]} !important;
             opacity: 0.7;
         }}
         h1, h2, h3, h4, h5, h6,
         .stMarkdown h1, .stMarkdown h2, .stMarkdown h3,
         .stMarkdown h4, .stMarkdown h5, .stMarkdown h6 {{
-            color: {current_theme["theme.textColor"]} !important;
+            color: {theme_config["theme.textColor"]} !important;
         }}
         .stDataFrame, .stMetric, .stJson, .stAlert,
         .stExpander .stMarkdown, .stTooltip, .stMetricValue {{
-            color: {current_theme["theme.textColor"]} !important;
-        }}
-        .stDataFrame {{
-            background-color: {current_theme["theme.secondaryBackgroundColor"]} !important;
+            color: {theme_config["theme.textColor"]} !important;
         }}
         .stSidebar {{
-            background-color: {current_theme["theme.secondaryBackgroundColor"]} !important;
+            background-color: {theme_config["theme.secondaryBackgroundColor"]} !important;
             border-radius: 15px;
             padding: 10px;
         }}
         .nav-link.active {{
-            background-color: {current_theme["theme.primaryColor"]} !important;
+            background-color: {theme_config["theme.primaryColor"]} !important;
             color: #FFFFFF !important;
             font-weight: bold !important;
             border-radius: 8px;
@@ -126,36 +124,36 @@ def apply_custom_css():
             color: #FFFFFF !important;
         }}
         .nav-link {{
-            color: {current_theme["theme.textColor"]} !important;
+            color: {theme_config["theme.textColor"]} !important;
             transition: background-color 0.3s, color 0.3s;
         }}
         .nav-link:hover {{
-            background-color: {current_theme["theme.primaryColor"]}33;
-            color: {current_theme["theme.primaryColor"]} !important;
+            background-color: {theme_config["theme.primaryColor"]}33;
+            color: {theme_config["theme.primaryColor"]} !important;
         }}
         .stButton>button {{
-            background-color: {current_theme["theme.primaryColor"]} !important;
+            background-color: {theme_config["theme.primaryColor"]} !important;
             color: #FFFFFF !important;
         }}
         .st-emotion-cache-1cj4yv0,
         .st-emotion-cache-efbu8t {{
-            background-color: {current_theme["theme.secondaryBackgroundColor"]} !important;
+            background-color: {theme_config["theme.secondaryBackgroundColor"]} !important;
         }}
         .stMultiSelect span[data-baseweb="tag"] {{
-            background-color: {current_theme["theme.primaryColor"]} !important;
+            background-color: {theme_config["theme.primaryColor"]} !important;
             color: white !important;
         }}
         .stButton>button p {{
             color: white !important;
         }}
         div[data-testid="stMetricValue"] {{
-            color: {current_theme["theme.textColor"]} !important;
+            color: {theme_config["theme.textColor"]} !important;
         }}
         [class*="stMetric"] {{
-            color: {current_theme["theme.textColor"]} !important;
+            color: {theme_config["theme.textColor"]} !important;
         }}
         [class*="st-emotion-cache"] {{
-            color: {current_theme["theme.primaryColor"]} !important;
+            color: {theme_config["theme.primaryColor"]} !important;
         }}
         </style>
         """,
@@ -288,8 +286,10 @@ def plot_heatmap(data, column, title):
             aggfunc='sum', 
             fill_value=0
         )
+        
         pivot_table = pivot_table.reindex(columns=['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
                                                       'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'], fill_value=0)
+        
         fig = px.imshow(
             pivot_table,
             labels=dict(x="Mês", y="Fabricante", color="Valor (R$)"),
@@ -297,14 +297,9 @@ def plot_heatmap(data, column, title):
             color_continuous_scale='Blues' if 'Compra' in title else 'Greens',
             text_auto=".2s"
         )
-        # Atualiza layout com base no tema atual
-        current_theme = st.session_state.themes[st.session_state.themes["current_theme"]]
         fig.update_layout(
             xaxis=dict(side="top", tickangle=-45),
-            height=600,
-            plot_bgcolor=current_theme["theme.secondaryBackgroundColor"],
-            paper_bgcolor=current_theme["theme.backgroundColor"],
-            font_color=current_theme["theme.textColor"]
+            height=600
         )
         st.plotly_chart(fig, use_container_width=True)
     except Exception as e:
@@ -330,15 +325,12 @@ def plot_bar_chart(data):
             y='Valor', 
             color='Tipo', 
             barmode='group',
-            color_discrete_map={'VALOR_COMPRADO': '#084a91', 'VALOR_VENDIDO': '#fa6547'},
+            color_discrete_map={'VALOR_COMPRADO': '#428bca', 'VALOR_VENDIDO': '#00ba6c'},
             text='ValorFormatado'
         )
         fig.update_layout(
             xaxis_title="Fabricante", 
-            yaxis_title="Valor (R$)",
-            plot_bgcolor=st.session_state.themes[st.session_state.themes["current_theme"]]["theme.secondaryBackgroundColor"],
-            paper_bgcolor=st.session_state.themes[st.session_state.themes["current_theme"]]["theme.backgroundColor"],
-            font_color=st.session_state.themes[st.session_state.themes["current_theme"]]["theme.textColor"]
+            yaxis_title="Valor (R$)"
         )
         fig.update_traces(
             hovertemplate="Fabricante=%{x}<br>valor=%{text}<extra></extra>",
@@ -371,6 +363,7 @@ else:
             df = df[df['NOMEFABR'] == escolha_fabricante]
         
         # Filtro Multiselect para Mês
+        # Obtém os meses disponíveis a partir do DataFrame
         if 'Mês' in df.columns:
             meses_disponiveis = sorted(df['Mês'].dropna().unique(), key=lambda m: ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'].index(m))
             meses_selecionados = st.multiselect("Selecione os meses", options=meses_disponiveis, default=meses_disponiveis)
@@ -407,12 +400,15 @@ else:
                 'VALOR_VENDIDO': 'sum',
                 'DIFERENCA_VALORES': 'sum'
             }).nlargest(10, 'VALOR_VENDIDO').reset_index()
+            
+            # Renomeia as colunas conforme solicitado
             top10 = top10.rename(columns={
                 'NOMEFABR': 'Fabricante',
                 'VALOR_COMPRADO': 'Valor Comprado',
                 'VALOR_VENDIDO': 'Valor Vendido',
                 'DIFERENCA_VALORES': 'Diferença de Valores'
             })
+            
             st.dataframe(
                 top10.style.format({
                     'Valor Comprado': lambda x: format_currency(x),
@@ -421,6 +417,7 @@ else:
                 }),
                 use_container_width=True, hide_index=True
             )
+
             
     except KeyError as e:
         st.error(f"Erro de estrutura de dados: {str(e)}")
