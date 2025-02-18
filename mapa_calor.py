@@ -316,18 +316,27 @@ def plot_heatmap(data, column, title):
     except Exception as e:
         st.error(f"Erro ao plotar heatmap: {str(e)}")
         
-        
 def plot_bar_chart(data):
     st.subheader("Gráfico de Colunas")
-
     try:
-        # Agrupa os dados por fabricante
+        # Agrupa os dados por fabricante e soma os valores
         df_grouped = data.groupby('NOMEFABR')[['VALOR_COMPRADO', 'VALOR_VENDIDO']].sum().reset_index()
+        
         # Converte para formato longo para facilitar o agrupamento das barras
-        df_long = pd.melt(df_grouped, id_vars=['NOMEFABR'], 
-                          value_vars=['VALOR_COMPRADO', 'VALOR_VENDIDO'],
-                          var_name='Tipo', value_name='Valor')
-        # Cria o gráfico de barras agrupado com as cores personalizadas
+        df_long = pd.melt(
+            df_grouped, 
+            id_vars=['NOMEFABR'], 
+            value_vars=['VALOR_COMPRADO', 'VALOR_VENDIDO'],
+            var_name='Tipo', 
+            value_name='Valor'
+        )
+        
+        # Cria uma nova coluna com os valores formatados no padrão brasileiro
+        df_long['ValorFormatado'] = df_long['Valor'].apply(
+            lambda x: f"R$ {x:,.2f}".replace(",", "TEMP").replace(".", ",").replace("TEMP", ".")
+        )
+        
+        # Cria o gráfico de barras agrupado com as cores personalizadas e exibe o valor formatado como texto
         fig = px.bar(
             df_long, 
             x='NOMEFABR', 
@@ -335,9 +344,20 @@ def plot_bar_chart(data):
             color='Tipo', 
             barmode='group',
             color_discrete_map={'VALOR_COMPRADO': '#084a91', 'VALOR_VENDIDO': '#fa6547'},
-            title='Gráfico de Colunas'
+            text='ValorFormatado'
         )
-        fig.update_layout(xaxis_title="Fabricante", yaxis_title="Valor (R$)")
+        
+        fig.update_layout(
+            xaxis_title="Fabricante", 
+            yaxis_title="Valor (R$)"
+        )
+        
+        # Atualiza os traços para customizar o hover
+        fig.update_traces(
+            hovertemplate="Fabricante=%{x}<br>valor=%{text}<extra></extra>",
+            textposition='outside'
+        )
+        
         st.plotly_chart(fig, use_container_width=True)
     except Exception as e:
         st.error(f"Erro ao plotar gráfico de barras: {e}")
