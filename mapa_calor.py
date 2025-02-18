@@ -107,6 +107,9 @@ def apply_custom_css():
         .stExpander .stMarkdown, .stTooltip, .stMetricValue {{
             color: {theme_config["theme.textColor"]} !important;
         }}
+        .stDataFrame {{
+            background-color: {theme_config["theme.secondaryBackgroundColor"]} !important;
+        }}
         .stSidebar {{
             background-color: {theme_config["theme.secondaryBackgroundColor"]} !important;
             border-radius: 15px;
@@ -168,14 +171,8 @@ if st.button(st.session_state.themes[st.session_state.themes["current_theme"]]["
     pass
 
 # ==========================================
-# 2. Conexão com Banco de Dados e Consulta (MODIFICADO)
-# ==========================================
-# 
-# 
-# ==========================================
 # Campos para selecionar o período desejado
 # ==========================================
-# Campos para selecionar o período desejado
 st.sidebar.subheader("Filtro de Período")
 data_inicial = st.sidebar.date_input("Data Inicial", value=datetime(2024, 1, 1))
 data_final = st.sidebar.date_input("Data Final", value=datetime(2024, 12, 31))
@@ -294,17 +291,10 @@ def format_currency(value):
 # ==========================================
 def plot_heatmap(data, column, title):
     try:
-        # Verifica se as colunas necessárias estão presentes
         if 'Mês' not in data.columns or column not in data.columns:
             st.error("Coluna 'Mês' ou a métrica especificada não foram encontradas")
             return
         
-        # Cria uma pivot_table invertendo os eixos:
-        # - index: cada linha será o mês (Mês)
-        # - columns: cada coluna será um fabricante (NOMEFABR)
-        # - values: os valores da métrica especificada (ex: VALOR_COMPRADO)
-        # - aggfunc='sum': soma os valores para cada combinação mês/fabricante
-        # - fill_value=0: preenche com 0 onde não há dados
         pivot_table = data.pivot_table(
             index='Mês', 
             columns='NOMEFABR', 
@@ -312,24 +302,17 @@ def plot_heatmap(data, column, title):
             aggfunc='sum', 
             fill_value=0
         )
-        
-        # Reordena as linhas (meses) para garantir a ordem correta
         pivot_table = pivot_table.reindex(
             index=['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
             fill_value=0
         )
-        
-        # Cria o heatmap usando px.imshow a partir da pivot_table
         fig = px.imshow(
-        pivot_table,
-        labels=dict(x="Fabricante", y="Mês", color="Valor (R$)"),
-        title=f'Heatmap de {title}',
-        color_continuous_scale='Bluyl' if 'Compra' in title else ('Algae' if 'Venda' in title else 'Rdbu'),
-        text_auto=".2s"
-    )
-
-        
-        # Atualiza o layout: o eixo y (meses) é configurado para exibir os ticks corretamente
+            pivot_table,
+            labels=dict(x="Fabricante", y="Mês", color="Valor (R$)"),
+            title=f'Heatmap de {title}',
+            color_continuous_scale='Bluyl' if 'Compra' in title else ('Algae' if 'Venda' in title else 'Rdbu'),
+            text_auto=".2s"
+        )
         fig.update_layout(
             yaxis=dict(
                 side="left",
@@ -344,7 +327,6 @@ def plot_heatmap(data, column, title):
         st.plotly_chart(fig, use_container_width=True)
     except Exception as e:
         st.error(f"Erro ao plotar heatmap: {str(e)}")
-
 
 def plot_bar_chart(data):
     st.subheader("Gráfico de Colunas")
@@ -384,9 +366,9 @@ def plot_bar_chart(data):
 # ==========================================
 # 4. Aplicação Principal (ATUALIZADO)
 # ==========================================
-
 st.title("Análise de Compras e Vendas por Fabricante")
-df = fetch_data()
+
+df = fetch_data(data_inicial, data_final)
 
 if df.empty:
     st.info("Nenhum dado foi retornado da consulta.")
@@ -418,7 +400,22 @@ else:
         col2.metric("Total Vendido", format_currency(df['VALOR_VENDIDO'].sum()))
         col3.metric("Diferença", format_currency(df['DIFERENCA_VALORES'].sum()))
         
-       
+        # Exibe os dados completos em um expander (com colunas renomeadas para exibição)
+        with st.expander("Ver dados completos"):
+            df_table = df.copy()
+            df_table = df_table.rename(columns={
+                'NOMEFABR': 'Fabricante',
+                'VALOR_COMPRADO': 'Valor Comprado',
+                'VALOR_VENDIDO': 'Valor Vendido',
+                'DIFERENCA_VALORES': 'Diferença de Valores',
+                'ANO': 'Ano',
+                'COD_FABR': 'Código Fabr.'
+            })
+            st.dataframe(df_table.style.format({
+                'Valor Comprado': lambda x: format_currency(x),
+                'Valor Vendido': lambda x: format_currency(x),
+                'Diferença de Valores': lambda x: format_currency(x)
+            }), use_container_width=True, hide_index=True)
         
         # Abas para visualizações dos gráficos (usam o DataFrame com nomes originais)
         tab1, tab2, tab3 = st.tabs(["Compras", "Vendas", "Diferença"])
@@ -429,29 +426,10 @@ else:
         with tab3:
             plot_heatmap(df, 'DIFERENCA_VALORES', 'Diferença de Valores')
         
-        
-        
         # Gráfico de barras
         plot_bar_chart(df)
-         # Exibe os dados completos em um expander (renomeando as colunas apenas para exibição)
-        with st.expander("Ver dados completos"):
-            df_table = df.copy()
-            df_table = df_table.rename(columns={
-                'ANO': 'Ano',
-                'COD_FABR': 'Código Fabr.',              
-                'NOMEFABR': 'Fabricante',
-                'VALOR_COMPRADO': 'Valor Comprado',
-                'VALOR_VENDIDO': 'Valor Vendido',
-                'DIFERENCA_VALORES': 'Diferença de Valores'
-            })
-            st.dataframe(df_table.style.format({
-                        'Valor Comprado': lambda x: format_currency(x),
-                        'Valor Vendido': lambda x: format_currency(x),
-                        'Diferença de Valores': lambda x: format_currency(x)
-                    }),
-                    use_container_width=True, hide_index=True
-                )
-        # Exibe o Top 10 Fabricantes em outro expander (apenas se 'Todos' estiver selecionado)
+        
+        # Exibe o Top 10 Fabricantes em um expander (renomeando as colunas)
         if escolha_fabricante == 'Todos':
             with st.expander("Top 10 Fabricantes"):
                 top10 = df.groupby('NOMEFABR').agg({
