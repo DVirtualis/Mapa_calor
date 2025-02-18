@@ -399,15 +399,25 @@ else:
                 'VALOR_COMPRADO': 'sum',
                 'VALOR_VENDIDO': 'sum',
                 'DIFERENCA_VALORES': 'sum'
-            }).nlargest(10, 'VALOR_VENDIDO')
+            }).nlargest(10, 'VALOR_VENDIDO').reset_index()
+            
+            # Renomeia as colunas conforme solicitado
+            top10 = top10.rename(columns={
+                'NOMEFABR': 'Fabricante',
+                'VALOR_COMPRADO': 'Valor Comprado',
+                'VALOR_VENDIDO': 'Valor Vendido',
+                'DIFERENCA_VALORES': 'Diferença de Valores'
+            })
+            
             st.dataframe(
                 top10.style.format({
-                    'VALOR_COMPRADO': lambda x: format_currency(x),
-                    'VALOR_VENDIDO': lambda x: format_currency(x),
-                    'DIFERENCA_VALORES': lambda x: format_currency(x)
+                    'Valor Comprado': lambda x: format_currency(x),
+                    'Valor Vendido': lambda x: format_currency(x),
+                    'Diferença de Valores': lambda x: format_currency(x)
                 }),
                 use_container_width=True
             )
+
             
     except KeyError as e:
         st.error(f"Erro de estrutura de dados: {str(e)}")
