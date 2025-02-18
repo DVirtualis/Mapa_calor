@@ -72,48 +72,50 @@ def change_theme():
 
 def apply_custom_css():
     ms = st.session_state
-    current_theme = ms.themes["current_theme"]
-    theme_config = ms.themes[current_theme]
+    current_theme = ms.themes[st.session_state.themes["current_theme"]]
     st.markdown(
         f"""
         <style>
         html, body, .stApp {{
-            background-color: {theme_config["theme.backgroundColor"]};
-            color: {theme_config["theme.textColor"]};
+            background-color: {current_theme["theme.backgroundColor"]};
+            color: {current_theme["theme.textColor"]};
         }}
         .stSelectbox > div > div {{
-            background-color: {theme_config["theme.secondaryBackgroundColor"]} !important;
-            color: {theme_config["theme.textColor"]} !important;
+            background-color: {current_theme["theme.secondaryBackgroundColor"]} !important;
+            color: {current_theme["theme.textColor"]} !important;
             border-radius: 5px;
-            border: 2px solid {theme_config["theme.primaryColor"]} !important;
+            border: 2px solid {current_theme["theme.primaryColor"]} !important;
         }}
         .stSelectbox > div > div:hover {{
-            background-color: {theme_config["theme.primaryColor"]} !important;
+            background-color: {current_theme["theme.primaryColor"]} !important;
             color: #FFFFFF !important;
-            border: 2px solid {theme_config["theme.textColor"]} !important;
+            border: 2px solid {current_theme["theme.textColor"]} !important;
             border-radius: 5px;
             transition: border-color 0.3s ease-in-out;
         }}
         .stSelectbox > div > div::placeholder {{
-            color: {theme_config["theme.textColor"]} !important;
+            color: {current_theme["theme.textColor"]} !important;
             opacity: 0.7;
         }}
         h1, h2, h3, h4, h5, h6,
         .stMarkdown h1, .stMarkdown h2, .stMarkdown h3,
         .stMarkdown h4, .stMarkdown h5, .stMarkdown h6 {{
-            color: {theme_config["theme.textColor"]} !important;
+            color: {current_theme["theme.textColor"]} !important;
         }}
         .stDataFrame, .stMetric, .stJson, .stAlert,
         .stExpander .stMarkdown, .stTooltip, .stMetricValue {{
-            color: {theme_config["theme.textColor"]} !important;
+            color: {current_theme["theme.textColor"]} !important;
+        }}
+        .stDataFrame {{
+            background-color: {current_theme["theme.secondaryBackgroundColor"]} !important;
         }}
         .stSidebar {{
-            background-color: {theme_config["theme.secondaryBackgroundColor"]} !important;
+            background-color: {current_theme["theme.secondaryBackgroundColor"]} !important;
             border-radius: 15px;
             padding: 10px;
         }}
         .nav-link.active {{
-            background-color: {theme_config["theme.primaryColor"]} !important;
+            background-color: {current_theme["theme.primaryColor"]} !important;
             color: #FFFFFF !important;
             font-weight: bold !important;
             border-radius: 8px;
@@ -124,36 +126,36 @@ def apply_custom_css():
             color: #FFFFFF !important;
         }}
         .nav-link {{
-            color: {theme_config["theme.textColor"]} !important;
+            color: {current_theme["theme.textColor"]} !important;
             transition: background-color 0.3s, color 0.3s;
         }}
         .nav-link:hover {{
-            background-color: {theme_config["theme.primaryColor"]}33;
-            color: {theme_config["theme.primaryColor"]} !important;
+            background-color: {current_theme["theme.primaryColor"]}33;
+            color: {current_theme["theme.primaryColor"]} !important;
         }}
         .stButton>button {{
-            background-color: {theme_config["theme.primaryColor"]} !important;
+            background-color: {current_theme["theme.primaryColor"]} !important;
             color: #FFFFFF !important;
         }}
         .st-emotion-cache-1cj4yv0,
         .st-emotion-cache-efbu8t {{
-            background-color: {theme_config["theme.secondaryBackgroundColor"]} !important;
+            background-color: {current_theme["theme.secondaryBackgroundColor"]} !important;
         }}
         .stMultiSelect span[data-baseweb="tag"] {{
-            background-color: {theme_config["theme.primaryColor"]} !important;
+            background-color: {current_theme["theme.primaryColor"]} !important;
             color: white !important;
         }}
         .stButton>button p {{
             color: white !important;
         }}
         div[data-testid="stMetricValue"] {{
-            color: {theme_config["theme.textColor"]} !important;
+            color: {current_theme["theme.textColor"]} !important;
         }}
         [class*="stMetric"] {{
-            color: {theme_config["theme.textColor"]} !important;
+            color: {current_theme["theme.textColor"]} !important;
         }}
         [class*="st-emotion-cache"] {{
-            color: {theme_config["theme.primaryColor"]} !important;
+            color: {current_theme["theme.primaryColor"]} !important;
         }}
         </style>
         """,
@@ -286,10 +288,8 @@ def plot_heatmap(data, column, title):
             aggfunc='sum', 
             fill_value=0
         )
-        
         pivot_table = pivot_table.reindex(columns=['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
                                                       'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'], fill_value=0)
-        
         fig = px.imshow(
             pivot_table,
             labels=dict(x="Mês", y="Fabricante", color="Valor (R$)"),
@@ -297,9 +297,13 @@ def plot_heatmap(data, column, title):
             color_continuous_scale='Blues' if 'Compra' in title else 'Greens',
             text_auto=".2s"
         )
+        current_theme = st.session_state.themes[st.session_state.themes["current_theme"]]
         fig.update_layout(
             xaxis=dict(side="top", tickangle=-45),
-            height=600
+            height=600,
+            plot_bgcolor=current_theme["theme.secondaryBackgroundColor"],
+            paper_bgcolor=current_theme["theme.backgroundColor"],
+            font_color=current_theme["theme.textColor"]
         )
         st.plotly_chart(fig, use_container_width=True)
     except Exception as e:
@@ -325,12 +329,16 @@ def plot_bar_chart(data):
             y='Valor', 
             color='Tipo', 
             barmode='group',
-            color_discrete_map={'VALOR_COMPRADO': '#428bca', 'VALOR_VENDIDO': '#00ba6c'},
+            color_discrete_map={'VALOR_COMPRADO': '#084a91', 'VALOR_VENDIDO': '#fa6547'},
             text='ValorFormatado'
         )
+        current_theme = st.session_state.themes[st.session_state.themes["current_theme"]]
         fig.update_layout(
             xaxis_title="Fabricante", 
-            yaxis_title="Valor (R$)"
+            yaxis_title="Valor (R$)",
+            plot_bgcolor=current_theme["theme.secondaryBackgroundColor"],
+            paper_bgcolor=current_theme["theme.backgroundColor"],
+            font_color=current_theme["theme.textColor"]
         )
         fig.update_traces(
             hovertemplate="Fabricante=%{x}<br>valor=%{text}<extra></extra>",
@@ -350,20 +358,21 @@ if df.empty:
     st.info("Nenhum dado foi retornado da consulta.")
 else:
     try:
+        # Renomeia as colunas para padronização
         df = df.rename(columns={
+            'NOMEFABR': 'Fabricante',
             'ValorComprado': 'VALOR_COMPRADO',
             'ValorVendido': 'VALOR_VENDIDO',
             'DiferencaValores': 'DIFERENCA_VALORES'
         })
         
         # Filtro de Fabricante
-        fabricantes = ['Todos'] + sorted(df['NOMEFABR'].unique().tolist())
+        fabricantes = ['Todos'] + sorted(df['Fabricante'].unique().tolist())
         escolha_fabricante = st.selectbox("Escolha o Fabricante", fabricantes, index=0)
         if escolha_fabricante != 'Todos':
-            df = df[df['NOMEFABR'] == escolha_fabricante]
+            df = df[df['Fabricante'] == escolha_fabricante]
         
         # Filtro Multiselect para Mês
-        # Obtém os meses disponíveis a partir do DataFrame
         if 'Mês' in df.columns:
             meses_disponiveis = sorted(df['Mês'].dropna().unique(), key=lambda m: ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'].index(m))
             meses_selecionados = st.multiselect("Selecione os meses", options=meses_disponiveis, default=meses_disponiveis)
@@ -376,11 +385,45 @@ else:
         col2.metric("Total Vendido", format_currency(df['VALOR_VENDIDO'].sum()))
         col3.metric("Diferença", format_currency(df['DIFERENCA_VALORES'].sum()))
         
-        # Exibe os dados tabelados em um expander
+        # Expander para tabela completa
         with st.expander("Ver dados completos"):
-            st.dataframe(df)
+            # Renomeia colunas para exibição
+            df_exibicao = df.copy()
+            # Se desejar incluir Ano e Mês, eles já estão na tabela
+            df_exibicao = df_exibicao.rename(columns={
+                'Fabricante': 'Fabricante',
+                'ANO': 'Ano',
+                'Mês': 'Mês',
+                'VALOR_COMPRADO': 'Valor Comprado',
+                'VALOR_VENDIDO': 'Valor Vendido',
+                'DIFERENCA_VALORES': 'Diferença de Valores'
+            })
+            st.dataframe(df_exibicao, use_container_width=True)
         
-        # Abas para visualizações
+        # Expander para Top 10 Fabricantes (apenas se 'Todos' estiver selecionado)
+        if escolha_fabricante == 'Todos':
+            with st.expander("Ver Top 10 Fabricantes"):
+                top10 = df.groupby('Fabricante').agg({
+                    'VALOR_COMPRADO': 'sum',
+                    'VALOR_VENDIDO': 'sum',
+                    'DIFERENCA_VALORES': 'sum'
+                }).nlargest(10, 'VALOR_VENDIDO').reset_index()
+                top10 = top10.rename(columns={
+                    'Fabricante': 'Fabricante',
+                    'VALOR_COMPRADO': 'Valor Comprado',
+                    'VALOR_VENDIDO': 'Valor Vendido',
+                    'DIFERENCA_VALORES': 'Diferença de Valores'
+                })
+                st.dataframe(
+                    top10.style.format({
+                        'Valor Comprado': lambda x: format_currency(x),
+                        'Valor Vendido': lambda x: format_currency(x),
+                        'Diferença de Valores': lambda x: format_currency(x)
+                    }),
+                    use_container_width=True, hide_index=True
+                )
+            
+        # Abas para visualizações dos gráficos
         tab1, tab2, tab3 = st.tabs(["Compras", "Vendas", "Diferença"])
         with tab1:
             plot_heatmap(df, 'VALOR_COMPRADO', 'Compras')
@@ -392,33 +435,6 @@ else:
         # Gráfico de barras
         plot_bar_chart(df)
         
-        # Top 10 Fabricantes (apenas se 'Todos' estiver selecionado)
-        if escolha_fabricante == 'Todos':
-            st.subheader("Top 10 Fabricantes")
-            top10 = df.groupby('NOMEFABR').agg({
-                'VALOR_COMPRADO': 'sum',
-                'VALOR_VENDIDO': 'sum',
-                'DIFERENCA_VALORES': 'sum'
-            }).nlargest(10, 'VALOR_VENDIDO').reset_index()
-            
-            # Renomeia as colunas conforme solicitado
-            top10 = top10.rename(columns={
-                'NOMEFABR': 'Fabricante',
-                'VALOR_COMPRADO': 'Valor Comprado',
-                'VALOR_VENDIDO': 'Valor Vendido',
-                'DIFERENCA_VALORES': 'Diferença de Valores'
-            })
-            
-            st.dataframe(
-                top10.style.format({
-                    'Valor Comprado': lambda x: format_currency(x),
-                    'Valor Vendido': lambda x: format_currency(x),
-                    'Diferença de Valores': lambda x: format_currency(x)
-                }),
-                use_container_width=True, hide_index=True
-            )
-
-            
     except KeyError as e:
         st.error(f"Erro de estrutura de dados: {str(e)}")
         st.write("Colunas disponíveis:", df.columns.tolist())
