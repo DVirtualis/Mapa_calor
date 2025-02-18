@@ -243,16 +243,14 @@ df = fetch_data()
 if df.empty:
     st.info("Nenhum dado foi retornado da consulta.")
 else:
-    # Verificar estrutura dos dados
-    st.write("Pré-visualização dos dados:", df.head())
-    
+     
     try:
         # Converter nomes de colunas se necessário
         df = df.rename(columns={
             'ValorComprado': 'VALOR_COMPRADO',
             'ValorVendido': 'VALOR_VENDIDO',
             'DiferencaValores': 'DIFERENCA_VALORES',
-            'Mês': 'MES'
+          
         })
         
         fabricantes = ['Todos'] + sorted(df['NOMEFABR'].unique().tolist())
