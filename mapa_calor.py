@@ -175,7 +175,74 @@ def fetch_data():
     try:
         with get_connection() as cnxn:
             # Ler diretamente com pandas
-            df = pd.read_sql("EXEC sp_HeatMapComprasVendas '2024-01-01', '2024-12-31'", cnxn)
+            df = pd.read_sql("""DECLARE @DataInicial DATE = '2024-01-01', 
+        @DataFinal DATE = '2024-12-31';
+
+-- CTE para Compras Corrigida
+WITH ComprasCTE AS (
+    SELECT
+       f.CodFabr,
+       f.NOMEFABR,
+       YEAR(m.DtMov) AS Ano,
+       MONTH(m.DtMov) AS Mes,
+       SUM(dbo.fn_ValorItemMov2(im.IdItemMov, im.PrecoUnit, im.PercDescontoItem, m.PercDesconto, 'L') * im.Qtd) AS ValorComprado
+    FROM Movimento m
+    INNER JOIN ItensMov im ON m.IdMov = im.IdMov
+    INNER JOIN Produtos p ON im.IdProduto = p.IdProduto
+    INNER JOIN Fabricantes f ON p.CodFabr = f.CodFabr -- Corrigido o JOIN
+    WHERE m.TipoMov IN ('1.1', '1.6')
+      AND m.DtMov BETWEEN @DataInicial AND @DataFinal
+    GROUP BY f.CodFabr, f.NOMEFABR, YEAR(m.DtMov), MONTH(m.DtMov)
+),
+
+-- CTE para Vendas (mantida igual)
+Vendas AS (
+    SELECT 
+       bi.CodFabr,
+       bi.nomefabr,
+       bi.anovenda AS Ano,
+       bi.mesvenda AS Mes,
+       SUM(ISNULL(bi.vrvenda, 0)) AS ValorVendido
+    FROM dbo.BI_CUBOVENDA bi WITH (NOLOCK)
+    WHERE bi.codclifor LIKE 'C%'
+      AND bi.codclifor NOT LIKE 'F%'
+      AND bi.CondPag NOT IN (
+          'MATERIAL PROMOCIONAL', 'AJUSTE INVENTARIO ENT, 30', 'SAIDA COMODATO', 'TROCA MERCANTIL', 'GARANTIA', 
+          'DEVOLUÇÃO VENDA', 'TRANSF. FILIAL', 'DEMONSTRACAO', 'TROCA DE ELETRÔNICOS', 'TROCA', 'DEVOLUÇÃO DE COMODATO', 
+          'DEVOLUÇÃO MERCANTIL', 'DEVOLUÇÃO DE CONCERTO', 'COMODATO VENDA', 'COBR DE INVENTÁRIO SKY', 'COBR DE SLOW MOVING SKY', 
+          'DEVOLUÇÃO DE COMPRA', 'REMESSA P/ CONSERTO', 'ENTRADA COMODATO', 'BAIXA DE INCENDIO', 'BAIXA ESTOQUE/ PERCA', 
+          'DESCONTO EM FOLHA', 'CREDITO DEV.VENDA', 'COMODATO EAF', 'COMODATO EAF SKY', 'COMODATO EAF VIVENSIS', 
+          'COMODATO TELEVENDAS', 'USO INTERNO', 'DESCONTO EM FOLHA', 'FINANCEIRO - GERENCIAL', 'ATIVOS IMOBILIZADO'
+      )
+      AND bi.codclifor NOT IN (
+          'C00001','C02687','C02694','C00914','C01909','C02142','C02175','C02398','C02448','C40004','C50132','C50133',
+          'C50281','C50525','C50631','C50663','C50664','C50684','C50711','C50725','C50726','C50728','C50808','C50823',
+          'C51074','C51144','C51229','C51237','C51238','C51312','C51387','C51411','C51427','C51539','C51544','C51585',
+          'C51616','C51638','C51639','C51673','C51704','C51706','C51731','C51751','C51826','C51875','C51936','C51937',
+          'C51957','C51969','C51988','C51994','C52001','C52030','C52042','C52046','C52052','C52106','C52119','C52121',
+          'C52144','C52153','C52155','C52180','C52274','C52371','C52372','C52399','C52426','C52464','C52466','C52543',
+          'C52649','C52710','C52713','C52720','C52836','C52926','C52988','C53007','C53008','C53036','C53074','C53075',
+          'C53076','C53138','C53255','C53277','C53302','C53461','C53781'
+      )
+      AND bi.tipomovimento IN ('NF Venda', 'Pré-Venda')
+      AND DATEFROMPARTS(bi.anovenda, bi.mesvenda, 1) BETWEEN @DataInicial AND @DataFinal
+    GROUP BY bi.CodFabr, bi.nomefabr, bi.anovenda, bi.mesvenda
+)
+
+SELECT 
+    COALESCE(c.CodFabr, v.CodFabr) AS COD_FABR,
+    COALESCE(c.NOMEFABR, v.nomefabr) AS NOMEFABR,
+    COALESCE(c.Ano, v.Ano) AS ANO,
+    COALESCE(c.Mes, v.Mes) AS MES,
+    ISNULL(c.ValorComprado, 0) AS VALOR_COMPRADO,
+    ISNULL(v.ValorVendido, 0) AS VALOR_VENDIDO,
+    ISNULL(c.ValorComprado, 0) - ISNULL(v.ValorVendido, 0) AS DIFERENCA_VALORES
+FROM ComprasCTE c
+FULL OUTER JOIN Vendas v
+    ON c.CodFabr = v.CodFabr 
+    AND c.Ano = v.Ano 
+    AND c.Mes = v.Mes
+ORDER BY NOMEFABR, ANO, MES;""", cnxn)
             # Se a coluna dos meses vem sem acento, renomeia para 'Mês'
             if 'Mes' in df.columns and 'Mês' not in df.columns:
                 df = df.rename(columns={'Mes': 'Mês'})
