@@ -170,7 +170,6 @@ if st.button(st.session_state.themes[st.session_state.themes["current_theme"]]["
 # ==========================================
 # 2. Conexão com Banco de Dados e Consulta (MODIFICADO)
 # ==========================================
-
 @st.cache_data(ttl=3600)
 def fetch_data():
     try:
@@ -200,9 +199,7 @@ def fetch_data():
 # Função auxiliar para formatação de moeda no padrão brasileiro
 # ==========================================
 def format_currency(value):
-    # Formata com separador de milhar (vírgula) e ponto decimal, em seguida inverte os símbolos:
     formatted = f"R$ {value:,.2f}"
-    # Troca vírgulas por temporário, pontos por vírgulas, e temporário por pontos:
     formatted = formatted.replace(",", "TEMP").replace(".", ",").replace("TEMP", ".")
     return formatted
 
@@ -239,10 +236,8 @@ def plot_heatmap(data, column, title):
 def plot_bar_chart(data):
     st.subheader("Gráfico de Colunas")
     try:
+        # Agrupar dados sem converter para strings
         df_grouped = data.groupby('NOMEFABR')[['VALOR_COMPRADO', 'VALOR_VENDIDO']].sum().reset_index()
-        # Formata os valores para exibição
-        df_grouped['VALOR_COMPRADO'] = df_grouped['VALOR_COMPRADO'].apply(format_currency)
-        df_grouped['VALOR_VENDIDO'] = df_grouped['VALOR_VENDIDO'].apply(format_currency)
         st.bar_chart(df_grouped.set_index('NOMEFABR'))
     except Exception as e:
         st.error(f"Erro ao plotar gráfico de barras: {e}")
@@ -277,9 +272,12 @@ else:
         col2.metric("Total Vendido", format_currency(df['VALOR_VENDIDO'].sum()))
         col3.metric("Diferença", format_currency(df['DIFERENCA_VALORES'].sum()))
         
+        # Exibir os dados tabelados em um expander
+        with st.expander("Ver dados completos"):
+            st.dataframe(df)
+        
         # Abas para visualizações
         tab1, tab2, tab3 = st.tabs(["Compras", "Vendas", "Diferença"])
-        
         with tab1:
             plot_heatmap(df, 'VALOR_COMPRADO', 'Compras')
         with tab2:
@@ -287,7 +285,10 @@ else:
         with tab3:
             plot_heatmap(df, 'DIFERENCA_VALORES', 'Diferença Compra-Venda')
         
-        # Top 10 Fabricantes (apenas se todos estiverem selecionados)
+        # Gráfico de barras
+        plot_bar_chart(df)
+        
+        # Top 10 Fabricantes (apenas se 'Todos' estiver selecionado)
         if escolha_fabricante == 'Todos':
             st.subheader("Top 10 Fabricantes")
             top10 = df.groupby('NOMEFABR').agg({
@@ -295,7 +296,6 @@ else:
                 'VALOR_VENDIDO': 'sum',
                 'DIFERENCA_VALORES': 'sum'
             }).nlargest(10, 'VALOR_COMPRADO')
-            
             st.dataframe(
                 top10.style.format({
                     'VALOR_COMPRADO': lambda x: format_currency(x),
